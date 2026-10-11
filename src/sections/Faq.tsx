@@ -1,3 +1,4 @@
+import { RevealDiv } from '../components/Reveal'
 import { Button, SectionTitle } from '../components/ui'
 import { FAQ, ORDER_HREF } from '../lib/content'
 
@@ -17,16 +18,17 @@ export function Faq() {
         </div>
 
         <div className="flex w-full flex-col lg:flex-1">
-          {FAQ.items.map((item) => (
-            <div
+          {FAQ.items.map((item, i) => (
+            <RevealDiv
               key={item.q}
+              delay={i * 70}
               className="flex w-full flex-col gap-2 border-b border-[var(--line)] py-5 lg:py-6"
             >
               <h3 className="w-full text-[18px] font-bold text-[var(--ink)] lg:text-[19px]">
                 {item.q}
               </h3>
               <p className="w-full text-[17px] leading-[26px] text-[var(--ink-2)]">{item.a}</p>
-            </div>
+            </RevealDiv>
           ))}
         </div>
 

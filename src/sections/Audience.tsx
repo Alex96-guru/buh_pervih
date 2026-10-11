@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react'
 import { Fragment } from 'react'
+import { RevealDiv } from '../components/Reveal'
 import { SectionTitle } from '../components/ui'
 import { AUDIENCE, ORDER_HREF } from '../lib/content'
 
@@ -14,7 +15,10 @@ export function Audience() {
             {AUDIENCE.blocks.map((block, i) => (
               <Fragment key={block.title}>
                 {i > 0 && <div className="h-px w-full bg-[var(--line)]" />}
-                <div className="flex w-full flex-col gap-2 lg:gap-[10px]">
+                <RevealDiv
+                  delay={i * 120}
+                  className="flex w-full flex-col gap-2 lg:gap-[10px]"
+                >
                   <h3 className="text-[20px] font-bold text-[var(--ink)] lg:text-[22px]">
                     {block.title}
                   </h3>
@@ -23,27 +27,33 @@ export function Audience() {
                   </p>
                   <a
                     href={ORDER_HREF}
-                    className="flex w-fit items-center gap-2 pt-[2px] text-[16px] font-semibold text-[var(--accent)] hover:underline lg:pt-1"
+                    className="group flex w-fit items-center gap-2 pt-[2px] text-[16px] font-semibold text-[var(--accent)] hover:underline lg:pt-1"
                   >
                     {block.link}
-                    <ArrowRight size={16} />
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform duration-300 group-hover:translate-x-[3px]"
+                    />
                   </a>
-                </div>
+                </RevealDiv>
               </Fragment>
             ))}
           </div>
 
-          <div className="relative h-[240px] w-full overflow-hidden rounded-[20px] lg:h-auto lg:flex-1 lg:rounded-[28px]">
+          <RevealDiv
+            delay={180}
+            className="group relative h-[240px] w-full overflow-hidden rounded-[20px] lg:h-auto lg:flex-1 lg:rounded-[28px]"
+          >
             <img
               src={AUDIENCE.photo}
               alt=""
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
               loading="lazy"
             />
             <span className="absolute top-[14px] left-[14px] rounded-[8px] bg-[#FFFFFFCC] px-[10px] py-[5px] text-[12px] font-semibold text-[var(--ink)]">
               {AUDIENCE.photoBadge}
             </span>
-          </div>
+          </RevealDiv>
         </div>
       </div>
     </section>

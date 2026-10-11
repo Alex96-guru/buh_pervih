@@ -11,7 +11,10 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-[var(--line)] bg-[#F4F6FBB8] backdrop-blur-[10px]">
       {/* Десктоп */}
       <div className="mx-auto hidden h-[72px] w-full max-w-[1200px] items-center justify-between lg:flex">
-        <a href="#top" className="flex items-center gap-[10px]">
+        <a
+          href="#top"
+          className="flex items-center gap-[10px] transition-opacity hover:opacity-70"
+        >
           <img
             src="/logo/logo-horizontal-light.svg"
             alt="Бухгалтерия Первых"

@@ -1,21 +1,23 @@
 import { ArrowRight, Check, Info } from 'lucide-react'
+import { RevealDiv } from '../components/Reveal'
 import { SectionLead, SectionTitle } from '../components/ui'
 import { cn } from '../lib/cn'
 import { DOCS_NOTE, ORDER_HREF, SERVICES } from '../lib/content'
 
 type Card = (typeof SERVICES.cards)[number]
 
-function ServiceCard({ card }: { card: Card }) {
+function ServiceCard({ card, delay }: { card: Card; delay: number }) {
   return (
-    <a
-      href={ORDER_HREF}
-      className={cn(
-        'group flex h-[390px] flex-1 flex-col items-start gap-3 rounded-[20px] bg-white p-7 transition-shadow hover:shadow-[0_8px_28px_rgba(11,18,32,0.08)]',
-        card.featured
-          ? 'border-[1.5px] border-[var(--accent)]'
-          : 'border border-[var(--line)]',
-      )}
-    >
+    <RevealDiv delay={delay} className="flex flex-1">
+      <a
+        href={ORDER_HREF}
+        className={cn(
+          'group flex h-[390px] w-full flex-col items-start gap-3 rounded-[20px] bg-white p-7 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[6px] hover:border-[var(--accent)] hover:shadow-[0_14px_38px_rgba(11,18,32,0.12)]',
+          card.featured
+            ? 'border-[1.5px] border-[var(--accent)]'
+            : 'border border-[var(--line)]',
+        )}
+      >
       <div className="flex items-center gap-2">
         <span className="h-[6px] w-[6px] rounded-full bg-[var(--accent)]" />
         <span className="text-[13px] font-bold tracking-[1px] text-[var(--ink-2)]">
@@ -57,35 +59,46 @@ function ServiceCard({ card }: { card: Card }) {
         </span>
         <span
           className={cn(
-            'flex h-[44px] w-[44px] items-center justify-center rounded-full',
+            'flex h-[44px] w-[44px] items-center justify-center rounded-full transition-colors duration-300',
             card.featured
               ? 'bg-[var(--ink)] text-white'
-              : 'border-[1.5px] border-[var(--line)] bg-white text-[var(--ink)]',
+              : 'border-[1.5px] border-[var(--line)] bg-white text-[var(--ink)] group-hover:border-[var(--ink)] group-hover:bg-[var(--ink)] group-hover:text-white',
           )}
         >
-          <ArrowRight size={18} />
+          <ArrowRight
+            size={18}
+            className="transition-transform duration-300 group-hover:translate-x-[3px]"
+          />
         </span>
-      </div>
-    </a>
+        </div>
+      </a>
+    </RevealDiv>
   )
 }
 
-function PriceRow({ card }: { card: Card }) {
+function PriceRow({ card, delay }: { card: Card; delay: number }) {
   return (
-    <a
-      href={ORDER_HREF}
-      className="flex w-full flex-col gap-[6px] border-b border-[var(--line)] py-4"
-    >
-      <p className="w-full text-[18px] font-bold text-[var(--ink)]">{card.title}</p>
-      <div className="flex w-full items-center justify-between pt-1">
-        <span className="text-[18px] font-extrabold tracking-[-0.3px] text-[var(--ink)]">
-          {card.price}
-        </span>
-        <span className="flex h-[36px] w-[36px] items-center justify-center rounded-full border-[1.5px] border-[var(--line)] bg-white text-[var(--ink)]">
-          <ArrowRight size={16} />
-        </span>
-      </div>
-    </a>
+    <RevealDiv delay={delay} className="w-full">
+      <a
+        href={ORDER_HREF}
+        className="group flex w-full flex-col gap-[6px] border-b border-[var(--line)] py-4 transition-colors hover:border-[var(--accent)]"
+      >
+        <p className="w-full text-[18px] font-bold text-[var(--ink)] transition-colors group-hover:text-[var(--accent)]">
+          {card.title}
+        </p>
+        <div className="flex w-full items-center justify-between pt-1">
+          <span className="text-[18px] font-extrabold tracking-[-0.3px] text-[var(--ink)]">
+            {card.price}
+          </span>
+          <span className="flex h-[36px] w-[36px] items-center justify-center rounded-full border-[1.5px] border-[var(--line)] bg-white text-[var(--ink)] transition-colors duration-300 group-hover:border-[var(--ink)] group-hover:bg-[var(--ink)] group-hover:text-white">
+            <ArrowRight
+              size={16}
+              className="transition-transform duration-300 group-hover:translate-x-[3px]"
+            />
+          </span>
+        </div>
+      </a>
+    </RevealDiv>
   )
 }
 
@@ -105,8 +118,8 @@ export function Services() {
         <div className="hidden flex-col gap-6 lg:flex">
           {rows.map((row, i) => (
             <div key={i} className="flex w-full items-stretch gap-6">
-              {row.map((card) => (
-                <ServiceCard key={card.title} card={card} />
+              {row.map((card, j) => (
+                <ServiceCard key={card.title} card={card} delay={j * 110} />
               ))}
             </div>
           ))}
@@ -114,25 +127,28 @@ export function Services() {
 
         {/* Мобайл: строки прайса */}
         <div className="flex w-full flex-col lg:hidden">
-          {SERVICES.cards.map((card) => (
-            <PriceRow key={card.title} card={card} />
+          {SERVICES.cards.map((card, i) => (
+            <PriceRow key={card.title} card={card} delay={i * 70} />
           ))}
         </div>
 
         {/* Выноска — только десктоп, как в макете */}
-        <div className="hidden w-full items-center gap-6 rounded-[16px] bg-[var(--accent-soft)] px-6 py-5 lg:flex">
+        <RevealDiv className="hidden w-full items-center gap-6 rounded-[16px] bg-[var(--accent-soft)] px-6 py-5 lg:flex">
           <Info size={20} className="shrink-0 text-[var(--accent)]" />
           <p className="flex-1 text-[16px] leading-[23px] font-medium text-[var(--ink)]">
             {DOCS_NOTE}
           </p>
           <a
             href={ORDER_HREF}
-            className="flex shrink-0 items-center gap-2 text-[16px] font-semibold text-[var(--accent)] hover:underline"
+            className="group flex shrink-0 items-center gap-2 text-[16px] font-semibold text-[var(--accent)] hover:underline"
           >
             Все услуги и цены
-            <ArrowRight size={18} />
+            <ArrowRight
+              size={18}
+              className="transition-transform duration-300 group-hover:translate-x-[3px]"
+            />
           </a>
-        </div>
+        </RevealDiv>
       </div>
     </section>
   )

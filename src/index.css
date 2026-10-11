@@ -32,4 +32,77 @@
   .font-primary {
     font-family: 'Manrope', system-ui, sans-serif;
   }
+
+  /*
+   * Плавное появление при скролле.
+   * Намеренно через animation, а не transition: ховер-утилиты Tailwind
+   * задают свой transition-property и перебили бы появление.
+   * transform здесь не конфликтует с hover:-translate-*, потому что
+   * Tailwind v4 двигает элементы через отдельное свойство translate.
+   */
+  .reveal {
+    opacity: 0;
+  }
+
+  .reveal-in {
+    animation: reveal-in 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes reveal-in {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Блок, наезжающий на предыдущий при скролле. */
+  .overlap {
+    position: relative;
+    z-index: 1;
+    margin-top: -28px;
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+    box-shadow: 0 -16px 44px rgb(11 18 32 / 0.09);
+  }
+
+  @media (min-width: 1024px) {
+    .overlap {
+      margin-top: -48px;
+      border-top-left-radius: 44px;
+      border-top-right-radius: 44px;
+    }
+  }
+
+  /* Уважаем системную настройку «меньше движения». */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .reveal-in {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+
+    * {
+      scroll-behavior: auto !important;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Якоря не должны уезжать под липкую шапку. */
+  section[id] {
+    scroll-margin-top: 64px;
+  }
+
+  @media (min-width: 1024px) {
+    section[id] {
+      scroll-margin-top: 72px;
+    }
+  }
 }

@@ -183,25 +183,24 @@ export const REVIEWS = {
   title: 'Что пишут клиенты на Профи.ру',
   linkLabel: 'Все отзывы',
   linkHref: 'https://profi.ru/profile/PoponinaOV',
-  note: '[заменить скриншотами реальных отзывов]',
   items: [
     {
-      name: '[Имя клиента]',
-      date: '[дата]',
-      text: 'Помогли закрыть ИП. Всё сделали за неделю, я только подписала заявление. С налоговой общались сами, мне ничего разбирать не пришлось.',
-      service: 'Закрытие ИП',
+      name: 'Андрей',
+      date: '15 сентября 2026',
+      text: 'Профессионал: на любой вопрос сразу знает ответ, работает чётко и быстро. Жалеет, что не нашёл её раньше.',
+      service: 'Составление декларации',
     },
     {
-      name: '[Имя клиента]',
-      date: '[дата]',
-      text: 'Веду с ними ООО второй год. Отчёты сдаются вовремя, на вопросы отвечают по-человечески.',
-      service: 'Ведение ООО',
+      name: 'Стас',
+      date: '9 октября 2026',
+      text: 'Очень быстро, не пришлось разбираться самому. Спасибо!',
+      service: 'Отчётность ИП, отчётность ФНС (1 200 ₽)',
     },
     {
-      name: '[Имя клиента]',
-      date: '[дата]',
-      text: 'Сделали вычет за лечение. Отправила сканы вечером, через месяц деньги пришли на карту. Буду обращаться ещё за вычетом по ипотеке.',
-      service: 'Декларация 3-НДФЛ',
+      name: 'Сергей',
+      date: '25 сентября 2026',
+      text: 'Быстро помогли заполнить декларацию ИП.',
+      service: 'Составление декларации (1 900 ₽)',
     },
   ],
 }
@@ -253,24 +252,51 @@ export const CONTACTS = {
   ] as const,
 }
 
+export const MAX_HREF = 'tel:+79026335387'
+export const VK_HREF = 'https://vk.ru/buhgalterskieuslugy'
+export const MAIL_HREF = 'mailto:Buhpervih@yandex.ru'
+export const PROFI_HREF = 'https://profi.ru/profile/PoponinaOV'
+
+/** Плитки каналов связи — по компоненту «Плитка мессенджера» из дизайн-системы. */
+export const MESSENGERS = [
+  { icon: 'message-circle', channel: 'MAX', contact: '8 902 633-53-87', href: MAX_HREF },
+  { icon: 'globe', channel: 'ВКонтакте', contact: 'vk.ru/buhgalterskieuslugy', href: VK_HREF },
+] as const
+
+/** Без href пункт остаётся обычным текстом — вести ему некуда. */
 export const FOOTER = {
   slogan:
     'ООО ЦБО «Бухгалтерия Первых». Бухгалтерское обслуживание ИП, ООО и физлиц удалённо по всей России.',
   columns: [
-    { title: 'Услуги', links: ['ИП и ООО', 'Физлица', 'Консультация'] },
-    { title: 'Компания', links: ['Как работаем', 'Команда', 'Контакты', 'Реквизиты'] },
+    {
+      title: 'Услуги',
+      links: [
+        { label: 'ИП и ООО', href: '#services' },
+        { label: 'Физлица', href: '#services' },
+        { label: 'Консультация', href: ORDER_HREF },
+      ],
+    },
+    {
+      title: 'Компания',
+      links: [
+        { label: 'Как работаем', href: '#process' },
+        { label: 'Команда', href: '#team' },
+        { label: 'Контакты', href: '#contacts' },
+        { label: 'Реквизиты' },
+      ],
+    },
     {
       title: 'Связь',
       links: [
-        'MAX 8 902 633-53-87',
-        'Telegram @Buhpervih',
-        'Buhpervih@yandex.ru',
-        'vk.ru/buhgalterskieuslugy',
-        'profi.ru/profile/PoponinaOV',
-        'Пн–Пт 9:00–18:00 МСК',
+        { label: 'MAX 8 902 633-53-87', href: MAX_HREF },
+        { label: 'Telegram @Buhpervih', href: ORDER_HREF },
+        { label: 'Buhpervih@yandex.ru', href: MAIL_HREF },
+        { label: 'vk.ru/buhgalterskieuslugy', href: VK_HREF },
+        { label: 'profi.ru/profile/PoponinaOV', href: PROFI_HREF },
+        { label: 'Пн–Пт 9:00–18:00 МСК' },
       ],
     },
-  ],
+  ] as Array<{ title: string; links: Array<{ label: string; href?: string }> }>,
   copyright: '© 2026 ООО ЦБО «Бухгалтерия Первых» · ИНН 5981014378 · КПП 598101001',
   payment: 'Оплата: карта, СБП, расчётный счёт',
 }

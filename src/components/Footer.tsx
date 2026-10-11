@@ -20,11 +20,26 @@ export function Footer() {
             {FOOTER.columns.map((column) => (
               <div key={column.title} className="flex w-fit flex-col gap-3">
                 <p className="text-[15px] font-bold text-[var(--ink)]">{column.title}</p>
-                {column.links.map((link) => (
-                  <span key={link} className="text-[15px] font-medium text-[var(--ink-2)]">
-                    {link}
-                  </span>
-                ))}
+                {column.links.map((link) =>
+                  link.href ? (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target={link.href.startsWith('http') ? '_blank' : undefined}
+                      rel="noreferrer"
+                      className="w-fit text-[15px] font-medium text-[var(--ink-2)] transition-colors hover:text-[var(--accent)]"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <span
+                      key={link.label}
+                      className="text-[15px] font-medium text-[var(--ink-2)]"
+                    >
+                      {link.label}
+                    </span>
+                  ),
+                )}
               </div>
             ))}
           </div>

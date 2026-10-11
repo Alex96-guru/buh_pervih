@@ -1,4 +1,5 @@
 import { ArrowUpRight, Star } from 'lucide-react'
+import { RevealDiv } from '../components/Reveal'
 import { SectionTitle } from '../components/ui'
 import { REVIEWS } from '../lib/content'
 
@@ -12,18 +13,22 @@ export function Reviews() {
             href={REVIEWS.linkHref}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-[6px] text-[16px] font-bold text-[var(--accent)] hover:underline"
+            className="group flex items-center gap-[6px] text-[16px] font-bold text-[var(--accent)] hover:underline"
           >
             {REVIEWS.linkLabel}
-            <ArrowUpRight size={16} />
+            <ArrowUpRight
+              size={16}
+              className="transition-transform duration-300 group-hover:translate-x-[2px] group-hover:-translate-y-[2px]"
+            />
           </a>
         </div>
 
         <div className="flex w-full flex-col gap-[14px] lg:flex-row lg:items-start lg:gap-6">
           {REVIEWS.items.map((review, i) => (
-            <div
+            <RevealDiv
               key={i}
-              className="flex w-full flex-col gap-[10px] rounded-[12px] border border-[var(--line)] bg-white p-6 lg:flex-1 lg:p-7"
+              delay={i * 120}
+              className="flex w-full flex-col gap-[10px] rounded-[12px] border border-[var(--line)] bg-white p-6 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[4px] hover:border-[var(--accent)] hover:shadow-[0_12px_32px_rgba(11,18,32,0.10)] lg:flex-1 lg:p-7"
             >
               <div className="flex w-full items-center justify-between">
                 <span className="text-[16px] font-bold text-[var(--ink)]">{review.name}</span>
@@ -38,11 +43,9 @@ export function Reviews() {
 
               <p className="w-full text-[17px] leading-[26px] text-[var(--ink)]">{review.text}</p>
               <p className="text-[14px] font-semibold text-[var(--ink-2)]">{review.service}</p>
-            </div>
+            </RevealDiv>
           ))}
         </div>
-
-        <p className="text-[13px] text-[var(--ink-2)]">{REVIEWS.note}</p>
       </div>
     </section>
   )
