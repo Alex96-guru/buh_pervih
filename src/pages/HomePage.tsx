@@ -1,0 +1,31 @@
+import { Footer } from '../components/Footer'
+import { Header } from '../components/Header'
+import { Audience } from '../sections/Audience'
+import { Contacts } from '../sections/Contacts'
+import { Faq } from '../sections/Faq'
+import { Hero } from '../sections/Hero'
+import { Process } from '../sections/Process'
+import { Reviews } from '../sections/Reviews'
+import { Services } from '../sections/Services'
+import { Start } from '../sections/Start'
+import { Team } from '../sections/Team'
+
+export function HomePage() {
+  return (
+    <div className="min-h-full w-full bg-[var(--surface)]">
+      <Header />
+      <main>
+        <Hero />
+        <Start />
+        <Services />
+        <Audience />
+        <Process />
+        <Team />
+        <Reviews />
+        <Faq />
+        <Contacts />
+      </main>
+      <Footer />
+    </div>
+  )
+}

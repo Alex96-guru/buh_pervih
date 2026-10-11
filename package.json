@@ -1,0 +1,30 @@
+{
+  "name": "buh-pervih",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-3000}"
+  },
+  "dependencies": {
+    "lucide-react": "^1.55.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "serve": "^14.2.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "tailwindcss": "^4.1.14",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.9"
+  }
+}
