@@ -1,5 +1,11 @@
 export const ORDER_HREF = 'https://t.me/Buhpervih'
 
+/** Личные сообщения Ольги в MAX. Меняется здесь — обновляется везде сразу. */
+export const MAX_HREF = 'https://web.max.ru/64321609'
+export const VK_HREF = 'https://vk.ru/buhgalterskieuslugy'
+export const MAIL_HREF = 'mailto:Buhpervih@yandex.ru'
+export const PROFI_HREF = 'https://profi.ru/profile/PoponinaOV'
+
 export const NAV_ITEMS = [
   { label: 'Услуги и цены', href: '#services' },
   { label: 'Как работаем', href: '#process' },
@@ -174,7 +180,7 @@ export const TEAM = {
       name: 'Ирина Алексеевна',
       role: 'Бухгалтер',
       note: '19 лет в ФНС, работа с налогоплательщиками',
-      initials: 'ИА',
+      photo: '/image-5.png',
     },
   ],
 }
@@ -240,28 +246,32 @@ export const CONTACTS = {
   hours: 'Пн–Пт 9:00–18:00 МСК',
   qrCaption: 'Наведите камеру телефона — откроется Telegram',
   rows: [
-    { icon: 'message-circle', label: 'MAX', value: '8 902 633-53-87', href: 'tel:+79026335387' },
-    { icon: 'send', label: 'Telegram', value: '@Buhpervih', href: 'https://t.me/Buhpervih' },
-    { icon: 'mail', label: 'Почта', value: 'Buhpervih@yandex.ru', href: 'mailto:Buhpervih@yandex.ru' },
-    {
-      icon: 'globe',
-      label: 'ВКонтакте',
-      value: 'vk.ru/buhgalterskieuslugy',
-      href: 'https://vk.ru/buhgalterskieuslugy',
-    },
-  ] as const,
+    { icon: 'message-circle', label: 'MAX', value: '8 902 633-53-87', href: MAX_HREF, force: true },
+    { icon: 'send', label: 'Telegram', value: '@Buhpervih', href: ORDER_HREF },
+    { icon: 'mail', label: 'Почта', value: 'Buhpervih@yandex.ru', href: MAIL_HREF },
+    { icon: 'vk', label: 'ВКонтакте', value: 'vk.ru/buhgalterskieuslugy', href: VK_HREF },
+  ] as Array<{
+    icon: string
+    label: string
+    value: string
+    href: string
+    force?: boolean
+  }>,
 }
 
-export const MAX_HREF = 'tel:+79026335387'
-export const VK_HREF = 'https://vk.ru/buhgalterskieuslugy'
-export const MAIL_HREF = 'mailto:Buhpervih@yandex.ru'
-export const PROFI_HREF = 'https://profi.ru/profile/PoponinaOV'
-
 /** Плитки каналов связи — по компоненту «Плитка мессенджера» из дизайн-системы. */
-export const MESSENGERS = [
-  { icon: 'message-circle', channel: 'MAX', contact: '8 902 633-53-87', href: MAX_HREF },
-  { icon: 'globe', channel: 'ВКонтакте', contact: 'vk.ru/buhgalterskieuslugy', href: VK_HREF },
-] as const
+export const MESSENGERS: Array<{
+  icon: string
+  channel: string
+  contact?: string
+  href: string
+  /** Работает даже когда остальные ссылки выключены. */
+  force?: boolean
+}> = [
+  { icon: 'message-circle', channel: 'MAX', contact: '8 902 633-53-87', href: MAX_HREF, force: true },
+  // Адрес сообщества намеренно не выводим — на плитке остаётся только название.
+  { icon: 'vk', channel: 'ВКонтакте', href: VK_HREF },
+]
 
 /** Без href пункт остаётся обычным текстом — вести ему некуда. */
 export const FOOTER = {

@@ -1,6 +1,7 @@
 import { ArrowUpRight, Star } from 'lucide-react'
 import { RevealDiv } from '../components/Reveal'
 import { SectionTitle } from '../components/ui'
+import { linkProps } from '../lib/links'
 import { REVIEWS } from '../lib/content'
 
 export function Reviews() {
@@ -10,10 +11,8 @@ export function Reviews() {
         <div className="flex flex-col items-start gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-0">
           <SectionTitle className="lg:whitespace-nowrap">{REVIEWS.title}</SectionTitle>
           <a
-            href={REVIEWS.linkHref}
-            target="_blank"
-            rel="noreferrer"
-            className="group flex items-center gap-[6px] text-[16px] font-bold text-[var(--accent)] hover:underline"
+            {...linkProps(REVIEWS.linkHref)}
+            className="group flex cursor-pointer items-center gap-[6px] text-[16px] font-bold text-[var(--accent)] hover:underline"
           >
             {REVIEWS.linkLabel}
             <ArrowUpRight

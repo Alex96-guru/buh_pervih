@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 import { cn } from '../lib/cn'
+import { linkProps } from '../lib/links'
 
 type SectionTone = 'page' | 'surface' | 'ink'
 
@@ -42,18 +43,21 @@ const buttonVariant: Record<ButtonVariant, string> = {
 export function Button({
   variant = 'primary',
   size = 56,
+  href,
   className,
   children,
   ...rest
-}: ComponentPropsWithoutRef<'a'> & {
+}: Omit<ComponentPropsWithoutRef<'a'>, 'href'> & {
   variant?: ButtonVariant
   size?: 40 | 44 | 56
+  href?: string
 }) {
   const sizing =
     size === 56 ? 'h-[56px] px-7' : size === 44 ? 'h-[44px] px-5' : 'h-[40px] px-4'
 
   return (
     <a
+      {...linkProps(href)}
       className={cn(
         'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-[12px] text-[16px] font-bold whitespace-nowrap transition-colors',
         sizing,

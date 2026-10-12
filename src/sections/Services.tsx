@@ -2,6 +2,7 @@ import { ArrowRight, Check, Info } from 'lucide-react'
 import { RevealDiv } from '../components/Reveal'
 import { SectionLead, SectionTitle } from '../components/ui'
 import { cn } from '../lib/cn'
+import { linkProps } from '../lib/links'
 import { DOCS_NOTE, ORDER_HREF, SERVICES } from '../lib/content'
 
 type Card = (typeof SERVICES.cards)[number]
@@ -10,9 +11,9 @@ function ServiceCard({ card, delay }: { card: Card; delay: number }) {
   return (
     <RevealDiv delay={delay} className="flex flex-1">
       <a
-        href={ORDER_HREF}
+        {...linkProps(ORDER_HREF)}
         className={cn(
-          'group flex h-[390px] w-full flex-col items-start gap-3 rounded-[20px] bg-white p-7 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[6px] hover:border-[var(--accent)] hover:shadow-[0_14px_38px_rgba(11,18,32,0.12)]',
+          'group flex h-[390px] w-full cursor-pointer flex-col items-start gap-3 rounded-[20px] bg-white p-7 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[6px] hover:border-[var(--accent)] hover:shadow-[0_14px_38px_rgba(11,18,32,0.12)]',
           card.featured
             ? 'border-[1.5px] border-[var(--accent)]'
             : 'border border-[var(--line)]',
@@ -80,8 +81,8 @@ function PriceRow({ card, delay }: { card: Card; delay: number }) {
   return (
     <RevealDiv delay={delay} className="w-full">
       <a
-        href={ORDER_HREF}
-        className="group flex w-full flex-col gap-[6px] border-b border-[var(--line)] py-4 transition-colors hover:border-[var(--accent)]"
+        {...linkProps(ORDER_HREF)}
+        className="group flex w-full cursor-pointer flex-col gap-[6px] border-b border-[var(--line)] py-4 transition-colors hover:border-[var(--accent)]"
       >
         <p className="w-full text-[18px] font-bold text-[var(--ink)] transition-colors group-hover:text-[var(--accent)]">
           {card.title}
@@ -139,8 +140,8 @@ export function Services() {
             {DOCS_NOTE}
           </p>
           <a
-            href={ORDER_HREF}
-            className="group flex shrink-0 items-center gap-2 text-[16px] font-semibold text-[var(--accent)] hover:underline"
+            {...linkProps(ORDER_HREF)}
+            className="group flex shrink-0 cursor-pointer items-center gap-2 text-[16px] font-semibold text-[var(--accent)] hover:underline"
           >
             Все услуги и цены
             <ArrowRight

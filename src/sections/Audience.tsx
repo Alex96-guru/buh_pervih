@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import { Fragment } from 'react'
 import { RevealDiv } from '../components/Reveal'
 import { SectionTitle } from '../components/ui'
+import { linkProps } from '../lib/links'
 import { AUDIENCE, ORDER_HREF } from '../lib/content'
 
 export function Audience() {
@@ -26,8 +27,8 @@ export function Audience() {
                     {block.text}
                   </p>
                   <a
-                    href={ORDER_HREF}
-                    className="group flex w-fit items-center gap-2 pt-[2px] text-[16px] font-semibold text-[var(--accent)] hover:underline lg:pt-1"
+                    {...linkProps(ORDER_HREF)}
+                    className="group flex w-fit cursor-pointer items-center gap-2 pt-[2px] text-[16px] font-semibold text-[var(--accent)] hover:underline lg:pt-1"
                   >
                     {block.link}
                     <ArrowRight

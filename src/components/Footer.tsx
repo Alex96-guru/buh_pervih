@@ -1,3 +1,5 @@
+import { Logo } from './Logo'
+import { linkProps } from '../lib/links'
 import { FOOTER } from '../lib/content'
 
 export function Footer() {
@@ -6,11 +8,7 @@ export function Footer() {
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-7 lg:gap-10">
         <div className="flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between lg:gap-0">
           <div className="flex flex-col gap-4 lg:w-[340px]">
-            <img
-              src="/logo/logo-horizontal-light.svg"
-              alt="Бухгалтерия Первых"
-              className="h-[48px] w-[213px] object-contain"
-            />
+            <Logo className="h-[48px] w-[278px]" />
             <p className="w-full text-[15px] leading-[22px] font-medium text-[var(--ink-2)] lg:leading-normal">
               {FOOTER.slogan}
             </p>
@@ -24,10 +22,8 @@ export function Footer() {
                   link.href ? (
                     <a
                       key={link.label}
-                      href={link.href}
-                      target={link.href.startsWith('http') ? '_blank' : undefined}
-                      rel="noreferrer"
-                      className="w-fit text-[15px] font-medium text-[var(--ink-2)] transition-colors hover:text-[var(--accent)]"
+                      {...linkProps(link.href)}
+                      className="w-fit cursor-pointer text-[15px] font-medium text-[var(--ink-2)] transition-colors hover:text-[var(--accent)]"
                     >
                       {link.label}
                     </a>

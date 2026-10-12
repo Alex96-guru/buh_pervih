@@ -16,22 +16,14 @@ export function Team() {
               delay={i * 120}
               className="group flex w-full flex-col gap-3 lg:flex-1 lg:gap-[14px]"
             >
-              {'photo' in member && member.photo ? (
-                <div className="h-[262px] w-full overflow-hidden rounded-[20px] lg:h-[480px]">
-                  <img
-                    src={member.photo}
-                    alt={member.name}
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-                    loading="lazy"
-                  />
-                </div>
-              ) : (
-                <div className="flex h-[262px] w-full items-center justify-center rounded-[20px] bg-[var(--accent-soft)] transition-colors duration-300 group-hover:bg-[#d7e1ff] lg:h-[480px]">
-                  <span className="text-[40px] font-bold text-[var(--ink-2)]">
-                    {'initials' in member ? member.initials : ''}
-                  </span>
-                </div>
-              )}
+              <div className="h-[262px] w-full overflow-hidden rounded-[20px] lg:h-[480px]">
+                <img
+                  src={member.photo}
+                  alt={member.name}
+                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                  loading="lazy"
+                />
+              </div>
 
               <div className="flex w-full flex-col gap-1">
                 <p className="text-[20px] font-bold text-[var(--ink)]">{member.name}</p>

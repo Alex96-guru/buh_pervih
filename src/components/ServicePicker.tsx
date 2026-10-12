@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, Info, Wallet } from 'lucide-react'
 import { cn } from '../lib/cn'
+import { linkProps } from '../lib/links'
 import { ORDER_HREF, PAYMENT_NOTE, PICKER } from '../lib/content'
 
 function Callout({ icon, children }: { icon: 'info' | 'wallet'; children: string }) {
@@ -72,7 +73,7 @@ export function ServicePicker() {
       {current.note && <Callout icon="info">{current.note}</Callout>}
 
       <a
-        href={ORDER_HREF}
+        {...linkProps(ORDER_HREF)}
         className="flex h-[56px] w-full cursor-pointer items-center justify-center rounded-[12px] bg-[var(--ink)] px-7 text-[16px] font-bold text-white transition-colors hover:bg-[#1a2740]"
       >
         Оставить заявку

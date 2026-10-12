@@ -1,13 +1,18 @@
+import type { ComponentType } from 'react'
 import { Globe, Mail, MessageCircle, Send } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { VkIcon } from '../components/BrandIcons'
 import { RevealDiv } from '../components/Reveal'
+import { linkProps } from '../lib/links'
 import { CONTACTS, HERO } from '../lib/content'
 
-const ICONS: Record<string, LucideIcon> = {
+type IconComponent = ComponentType<{ size?: number; className?: string }>
+
+const ICONS: Record<string, IconComponent> = {
   'message-circle': MessageCircle,
   send: Send,
   mail: Mail,
   globe: Globe,
+  vk: VkIcon,
 }
 
 export function Contacts() {
@@ -41,10 +46,8 @@ export function Contacts() {
               return (
                 <RevealDiv key={row.label} delay={i * 90} className="w-fit">
                   <a
-                    href={row.href}
-                    target={row.href.startsWith('http') ? '_blank' : undefined}
-                    rel="noreferrer"
-                    className="group flex w-fit items-center gap-3 transition-transform duration-300 hover:translate-x-[4px] lg:gap-[14px]"
+                    {...linkProps(row.href, { force: row.force })}
+                    className="group flex w-fit cursor-pointer items-center gap-3 transition-transform duration-300 hover:translate-x-[4px] lg:gap-[14px]"
                   >
                     <Icon
                       size={24}

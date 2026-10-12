@@ -48,6 +48,7 @@ export function Hero() {
                 channel={m.channel}
                 contact={m.contact}
                 href={m.href}
+                force={m.force}
                 className="w-full sm:w-fit"
               />
             ))}
