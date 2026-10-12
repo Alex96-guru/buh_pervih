@@ -28,8 +28,11 @@ export function Contacts() {
               <img
                 src={HERO.photo}
                 alt={CONTACTS.avatarCaption}
-                className="h-[96px] w-[96px] rounded-full object-cover lg:h-[120px] lg:w-[120px]"
+                width={120}
+                height={120}
                 loading="lazy"
+                decoding="async"
+                className="h-[96px] w-[96px] rounded-full object-cover lg:h-[120px] lg:w-[120px]"
               />
               <span className="text-[12px] font-semibold text-[var(--ink)] lg:text-[13px]">
                 {CONTACTS.avatarCaption}

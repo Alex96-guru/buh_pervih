@@ -48,8 +48,9 @@ export function Audience() {
             <img
               src={AUDIENCE.photo}
               alt=""
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
               loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
             />
             <span className="absolute top-[14px] left-[14px] rounded-[8px] bg-[#FFFFFFCC] px-[10px] py-[5px] text-[12px] font-semibold text-[var(--ink)]">
               {AUDIENCE.photoBadge}

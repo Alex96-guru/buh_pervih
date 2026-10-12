@@ -67,6 +67,10 @@ export function Hero() {
             <img
               src={HERO.photo}
               alt={HERO.personName}
+              width={507}
+              height={709}
+              decoding="async"
+              fetchPriority="high"
               className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.04]"
             />
           </div>

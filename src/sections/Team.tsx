@@ -20,8 +20,11 @@ export function Team() {
                 <img
                   src={member.photo}
                   alt={member.name}
-                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                  width={500}
+                  height={660}
                   loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
                 />
               </div>
 
