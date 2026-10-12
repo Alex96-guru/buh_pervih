@@ -1,0 +1,22 @@
+# Postgres для локальной разработки. Боевая база — отдельный сервис на Railway.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: buh-pervih-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: buh
+      POSTGRES_PASSWORD: buh_local_dev
+      POSTGRES_DB: buh_pervih
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U buh -d buh_pervih']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

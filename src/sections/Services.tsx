@@ -1,6 +1,7 @@
 import { ArrowRight, Check, Info } from 'lucide-react'
 import { RevealDiv } from '../components/Reveal'
 import { SectionLead, SectionTitle } from '../components/ui'
+import { useAuth } from '../lib/auth'
 import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
 import { DOCS_NOTE, ORDER_HREF, SERVICES } from '../lib/content'
@@ -8,10 +9,13 @@ import { DOCS_NOTE, ORDER_HREF, SERVICES } from '../lib/content'
 type Card = (typeof SERVICES.cards)[number]
 
 function ServiceCard({ card, delay }: { card: Card; delay: number }) {
+  const { onOrderClick } = useAuth()
+
   return (
     <RevealDiv delay={delay} className="flex flex-1">
       <a
         {...linkProps(ORDER_HREF)}
+        onClick={onOrderClick}
         className={cn(
           'group flex h-[390px] w-full cursor-pointer flex-col items-start gap-3 rounded-[20px] bg-white p-7 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[6px] hover:border-[var(--accent)] hover:shadow-[0_14px_38px_rgba(11,18,32,0.12)]',
           card.featured
@@ -78,10 +82,13 @@ function ServiceCard({ card, delay }: { card: Card; delay: number }) {
 }
 
 function PriceRow({ card, delay }: { card: Card; delay: number }) {
+  const { onOrderClick } = useAuth()
+
   return (
     <RevealDiv delay={delay} className="w-full">
       <a
         {...linkProps(ORDER_HREF)}
+        onClick={onOrderClick}
         className="group flex w-full cursor-pointer flex-col gap-[6px] border-b border-[var(--line)] py-4 transition-colors hover:border-[var(--accent)]"
       >
         <p className="w-full text-[18px] font-bold text-[var(--ink)] transition-colors group-hover:text-[var(--accent)]">

@@ -10,10 +10,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-3000}"
+    "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-3000}",
+    "db:up": "docker compose up -d",
+    "db:migrate": "node server/db/migrate.mjs"
   },
   "dependencies": {
+    "dotenv": "^18.0.7",
     "lucide-react": "^1.55.0",
+    "pg": "^8.23.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "serve": "^14.2.6"
