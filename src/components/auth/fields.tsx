@@ -59,6 +59,50 @@ export function Field({
   )
 }
 
+/** Многострочное поле в том же стиле, что и Field. */
+export function TextArea({
+  label,
+  optional,
+  error,
+  className,
+  ...rest
+}: ComponentPropsWithoutRef<'textarea'> & {
+  label: string
+  optional?: boolean
+  error?: string
+}) {
+  const id = useId()
+  const errorId = `${id}-error`
+
+  return (
+    <div className="flex w-full flex-col gap-[6px]">
+      <div className="flex items-center gap-[6px]">
+        <label htmlFor={id} className="text-[14px] font-semibold text-[var(--ink)]">
+          {label}
+        </label>
+        {optional && (
+          <span className="text-[13px] font-semibold text-[var(--ink-2)]">необязательно</span>
+        )}
+      </div>
+
+      <textarea
+        id={id}
+        rows={3}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className={cn(
+          'w-full resize-y rounded-[12px] border bg-white px-[14px] py-3 text-[16px] leading-[24px] text-[var(--ink)] transition-colors outline-none placeholder:text-[var(--ink-2)]',
+          borderFor(error),
+          className,
+        )}
+        {...rest}
+      />
+
+      {error && <ErrorText id={errorId}>{error}</ErrorText>}
+    </div>
+  )
+}
+
 /** Пароль с глазком: тип поля переключается, значение не теряется. */
 export function PasswordField({
   label,

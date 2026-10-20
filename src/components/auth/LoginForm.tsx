@@ -2,17 +2,21 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Field, PasswordField, SubmitButton } from './fields'
 import { useAuth } from '../../lib/auth'
+import { ApiError, api } from '../../lib/api'
 import { formatPhone, validateLogin, validatePassword } from '../../lib/validation'
 
 export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
-  const { signIn } = useAuth()
+  const { signedIn } = useAuth()
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ login?: string; password?: string }>({})
+  const [formError, setFormError] = useState('')
+  const [sending, setSending] = useState(false)
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    setFormError('')
 
     const next: typeof errors = {}
     const loginError = validateLogin(login)
@@ -24,13 +28,19 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
     setErrors(next)
     if (Object.keys(next).length > 0) return
 
-    // Бэкенда нет: пароль не проверяется, вход живёт только в памяти вкладки.
-    signIn({
-      id: 'local',
-      fullName: login.includes('@') ? login.split('@')[0] : 'Личный кабинет',
-      email: login.includes('@') ? login.trim() : null,
-      clientType: 'ip',
-    })
+    setSending(true)
+    try {
+      const { user } = await api.login(login.trim(), password)
+      signedIn(user)
+    } catch (err) {
+      if (err instanceof ApiError && err.field) {
+        setErrors({ [err.field]: err.message })
+      } else {
+        setFormError(err instanceof Error ? err.message : 'Не удалось войти')
+      }
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -52,7 +62,6 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
           value={login}
           onChange={(e) => {
             const raw = e.target.value
-            // Телефон форматируем, почту оставляем как есть.
             const looksLikePhone = raw.length > 0 && !/[a-zA-Zа-яА-Я@]/.test(raw)
             setLogin(looksLikePhone ? formatPhone(raw) : raw)
             setErrors((prev) => (prev.login ? { ...prev, login: undefined } : prev))
@@ -82,7 +91,13 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
           </button>
         </div>
 
-        <SubmitButton>Войти</SubmitButton>
+        {formError && (
+          <p role="alert" className="text-[14px] font-medium text-[var(--danger)]">
+            {formError}
+          </p>
+        )}
+
+        <SubmitButton disabled={sending}>{sending ? 'Входим…' : 'Войти'}</SubmitButton>
 
         <div className="flex w-full items-center gap-3">
           <span className="h-px flex-1 bg-[var(--line)]" />

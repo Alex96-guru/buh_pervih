@@ -1,7 +1,5 @@
-import { AuthModal } from '../components/auth/AuthModal'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
-import { AuthProvider } from '../lib/auth'
 import { Audience } from '../sections/Audience'
 import { Contacts } from '../sections/Contacts'
 import { Faq } from '../sections/Faq'
@@ -14,23 +12,20 @@ import { Team } from '../sections/Team'
 
 export function HomePage() {
   return (
-    <AuthProvider>
-      <div className="min-h-full w-full bg-[var(--surface)]">
-        <Header />
-        <main>
-          <Hero />
-          <Start />
-          <Services />
-          <Audience />
-          <Process />
-          <Team />
-          <Reviews />
-          <Faq />
-          <Contacts />
-        </main>
-        <Footer />
-        <AuthModal />
-      </div>
-    </AuthProvider>
+    <div className="min-h-full w-full bg-[var(--surface)]">
+      <Header />
+      <main>
+        <Hero />
+        <Start />
+        <Services />
+        <Audience />
+        <Process />
+        <Team />
+        <Reviews />
+        <Faq />
+        <Contacts />
+      </main>
+      <Footer />
+    </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, MessagesSquare } from 'lucide-react'
-import { initialsOf, useAuth } from '../../lib/auth'
+import { Link } from 'react-router-dom'
+import { LogOut, MessagesSquare, Users } from 'lucide-react'
+import { ADMIN_PATH, CABINET_PATH, initialsOf, useAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
 
 /** Кружок с инициалами и меню аккаунта. Показывается только авторизованным. */
@@ -61,15 +62,27 @@ export function UserMenu({ size = 40 }: { size?: 36 | 40 }) {
             )}
           </div>
 
-          <button
-            type="button"
+          {user.role === 'admin' && (
+            <Link
+              to={ADMIN_PATH}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={cn(itemClass, 'text-[var(--ink)] hover:bg-[var(--page-bg)]')}
+            >
+              <Users size={18} className="shrink-0 text-[var(--ink-2)]" />
+              Пользователи
+            </Link>
+          )}
+
+          <Link
+            to={CABINET_PATH}
             role="menuitem"
             onClick={() => setOpen(false)}
             className={cn(itemClass, 'text-[var(--ink)] hover:bg-[var(--page-bg)]')}
           >
             <MessagesSquare size={18} className="shrink-0 text-[var(--ink-2)]" />
             Мои диалоги
-          </button>
+          </Link>
 
           <button
             type="button"

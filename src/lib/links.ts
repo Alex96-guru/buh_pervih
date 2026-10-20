@@ -1,9 +1,13 @@
 /**
- * Пока сайт не запущен, кнопки никуда не ведут: достаточно поставить false.
- * Якорные ссылки внутри страницы (#services и т.п.) продолжают работать —
- * они ведут по самой же странице и ничего не ломают.
+ * Пока сайт не запущен, внешние ссылки никуда не ведут: достаточно поставить false.
+ * Внутренние (/login, /#services) продолжают работать — они ведут по самому
+ * сайту и ничего не ломают.
  */
 export const LINKS_ENABLED = false
+
+function isInternal(href: string): boolean {
+  return href.startsWith('#') || href.startsWith('/')
+}
 
 type LinkProps = {
   href?: string
@@ -18,8 +22,7 @@ type LinkProps = {
 export function linkProps(href?: string, options?: { force?: boolean }): LinkProps {
   if (!href) return {}
 
-  const isInPage = href.startsWith('#')
-  if (!LINKS_ENABLED && !isInPage && !options?.force) return {}
+  if (!LINKS_ENABLED && !isInternal(href) && !options?.force) return {}
 
   return href.startsWith('http')
     ? { href, target: '_blank', rel: 'noreferrer' }

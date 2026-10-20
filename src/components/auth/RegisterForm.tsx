@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { MailCheck } from 'lucide-react'
 import { Field, PasswordField, Segmented, SubmitButton } from './fields'
 import { useAuth } from '../../lib/auth'
-import type { ClientType } from '../../lib/auth'
+import { ApiError, api } from '../../lib/api'
+import type { ClientType } from '../../lib/api'
 import {
   formatPhone,
+  phoneDigits,
   validateCompany,
   validateEmail,
   validateInn,
@@ -19,14 +22,11 @@ const TYPES: Array<{ value: ClientType; label: string }> = [
   { value: 'person', label: 'Физлицо' },
 ]
 
-type Errors = Partial<Record<'companyName' | 'inn' | 'fullName' | 'phone' | 'email' | 'password', string>>
+type Field_ = 'companyName' | 'inn' | 'fullName' | 'phone' | 'email' | 'password'
+type Errors = Partial<Record<Field_, string>>
 
-/**
- * Три варианта формы из макета различаются только набором полей,
- * поэтому это одна форма с переключателем, а не три отдельные.
- */
 export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
-  const { signIn } = useAuth()
+  const { signedIn } = useAuth()
 
   const [clientType, setClientType] = useState<ClientType>('ip')
   const [companyName, setCompanyName] = useState('')
@@ -35,7 +35,11 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
   const [errors, setErrors] = useState<Errors>({})
+  const [formError, setFormError] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sentTo, setSentTo] = useState('')
 
   function validate(): Errors {
     const next: Errors = {}
@@ -49,7 +53,6 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     }
 
     if (clientType === 'ip') {
-      // У ИП ИНН необязателен, но если введён — должен быть полным.
       const ipInn = validateInn(inn, 12, false)
       if (ipInn) next.inn = ipInn
     }
@@ -60,7 +63,8 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     const tel = validatePhone(phone)
     if (tel) next.phone = tel
 
-    const mail = validateEmail(email)
+    // Почта обязательна: на неё приходит подтверждение, без него нет входа.
+    const mail = validateEmail(email, true)
     if (mail) next.email = mail
 
     const pass = validatePassword(password)
@@ -69,25 +73,67 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     return next
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    setFormError('')
 
     const found = validate()
     setErrors(found)
     if (Object.keys(found).length > 0) return
 
-    // Бэкенда нет: вход существует только в памяти вкладки.
-    signIn({
-      id: 'local',
-      fullName: fullName.trim(),
-      email: email.trim() || null,
-      clientType,
-    })
+    setSending(true)
+    try {
+      const result = await api.register({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phoneDigits(phone),
+        password,
+        clientType,
+        companyName: companyName.trim() || undefined,
+        inn: inn || undefined,
+      })
+
+      if (result.needsEmailVerification) {
+        setSentTo(email.trim())
+      } else {
+        signedIn(result.user)
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.field) {
+        setErrors({ [err.field]: err.message })
+      } else {
+        setFormError(err instanceof Error ? err.message : 'Не удалось зарегистрироваться')
+      }
+    } finally {
+      setSending(false)
+    }
   }
 
-  /** Убираем ошибку поля, как только его начали править. */
-  function clear(field: keyof Errors) {
+  function clear(field: Field_) {
     setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev))
+  }
+
+  if (sentTo) {
+    return (
+      <div className="flex w-full flex-col items-center gap-6">
+        <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[var(--line)] bg-white p-8 text-center">
+          <MailCheck size={40} className="text-[var(--accent)]" />
+          <h2 className="text-[24px] font-bold text-[var(--ink)]">Подтвердите почту</h2>
+          <p className="text-[16px] leading-[24px] text-[var(--ink-2)]">
+            Отправили письмо на <span className="font-semibold text-[var(--ink)]">{sentTo}</span>.
+            Перейдите по ссылке из него — она действует сутки. После этого можно войти.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onSwitchToLogin}
+          className="cursor-pointer text-[15px] font-bold text-[var(--accent)] hover:underline"
+        >
+          Перейти ко входу
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -193,7 +239,6 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
           type="email"
           autoComplete="email"
           placeholder="you@mail.ru"
-          optional
           error={errors.email}
         />
 
@@ -209,7 +254,15 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
           error={errors.password}
         />
 
-        <SubmitButton>Зарегистрироваться</SubmitButton>
+        {formError && (
+          <p role="alert" className="text-[14px] font-medium text-[var(--danger)]">
+            {formError}
+          </p>
+        )}
+
+        <SubmitButton disabled={sending}>
+          {sending ? 'Отправляем…' : 'Зарегистрироваться'}
+        </SubmitButton>
 
         <p className="w-full text-[14px] leading-[20px] text-[var(--ink-2)]">
           Нажимая кнопку, вы соглашаетесь с обработкой персональных данных

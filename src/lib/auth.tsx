@@ -1,16 +1,15 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { api } from './api'
+import type { ApiUser, ClientType } from './api'
 
-export type ClientType = 'ip' | 'ooo' | 'person'
+export type { ClientType }
+export type AuthUser = ApiUser
 
-export type AuthUser = {
-  id: string
-  fullName: string
-  email: string | null
-  clientType: ClientType
-}
-
-export type AuthModalMode = 'login' | 'register'
+/** Куда попадает авторизованный пользователь. */
+export const CABINET_PATH = '/cabinet'
+export const ADMIN_PATH = '/admin'
 
 /** Инициалы для кружка в шапке: «Ольга Попонина» → «ОП». */
 export function initialsOf(fullName: string): string {
@@ -25,66 +24,81 @@ export function initialsOf(fullName: string): string {
 type AuthContextValue = {
   user: AuthUser | null
   isAuthenticated: boolean
-  modal: AuthModalMode | null
-  signIn: (user: AuthUser) => void
-  signOut: () => void
-  openLogin: () => void
-  openRegister: () => void
-  closeModal: () => void
-  /**
-   * Обработчик для кнопок «Оставить заявку» и карточек услуг.
-   * Неавторизованного уводим в регистрацию вместо перехода по ссылке.
-   */
+  isAdmin: boolean
+  /** true, пока проверяем текущую сессию: до этого судить об авторизации рано. */
+  loading: boolean
+  signedIn: (user: AuthUser) => void
+  signOut: () => Promise<void>
   onOrderClick: (event: MouseEvent) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  /**
-   * ЗАГЛУШКА: бэкенда ещё нет, поэтому вход существует только в памяти вкладки
-   * и исчезает при обновлении страницы. Пароль никуда не отправляется и
-   * не проверяется. Когда появится API, signIn заменится запросом к нему,
-   * а начальное состояние — запросом текущей сессии.
-   */
+  const navigate = useNavigate()
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [modal, setModal] = useState<AuthModalMode | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const openLogin = useCallback(() => setModal('login'), [])
-  const openRegister = useCallback(() => setModal('register'), [])
-  const closeModal = useCallback(() => setModal(null), [])
+  // При загрузке спрашиваем сервер, есть ли живая сессия в cookie.
+  useEffect(() => {
+    let cancelled = false
 
-  const signIn = useCallback((next: AuthUser) => {
-    setUser(next)
-    setModal(null)
+    api
+      .me()
+      .then(({ user: me }) => {
+        if (!cancelled) setUser(me)
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  const signOut = useCallback(() => setUser(null), [])
+  /** Вызывается формами после успешного ответа сервера. */
+  const signedIn = useCallback(
+    (next: AuthUser) => {
+      setUser(next)
+      navigate(next.role === 'admin' ? ADMIN_PATH : CABINET_PATH, { replace: true })
+    },
+    [navigate],
+  )
+
+  const signOut = useCallback(async () => {
+    try {
+      await api.logout()
+    } finally {
+      setUser(null)
+      navigate('/', { replace: true })
+    }
+  }, [navigate])
 
   const onOrderClick = useCallback(
     (event: MouseEvent) => {
       if (user) return
 
-      // Гасим переход: вместо заявки показываем регистрацию.
       event.preventDefault()
-      setModal('register')
+      navigate('/login')
     },
-    [user],
+    [user, navigate],
   )
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       isAuthenticated: user !== null,
-      modal,
-      signIn,
+      isAdmin: user?.role === 'admin',
+      loading,
+      signedIn,
       signOut,
-      openLogin,
-      openRegister,
-      closeModal,
       onOrderClick,
     }),
-    [user, modal, signIn, signOut, openLogin, openRegister, closeModal, onOrderClick],
+    [user, loading, signedIn, signOut, onOrderClick],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

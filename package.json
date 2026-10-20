@@ -10,17 +10,20 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-3000}",
-    "db:up": "docker compose up -d",
-    "db:migrate": "node server/db/migrate.mjs"
+    "start": "node server/index.mjs",
+    "dev:api": "node --watch server/index.mjs",
+    "db:migrate": "node server/db/migrate.mjs",
+    "db:make-admin": "node server/db/make-admin.mjs"
   },
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.7",
+    "express": "^5.3.0",
     "lucide-react": "^1.55.0",
     "pg": "^8.23.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "serve": "^14.2.6"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.14",

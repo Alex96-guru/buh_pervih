@@ -1,114 +1,10 @@
-import { ArrowRight, Check, Info } from 'lucide-react'
+import { ArrowRight, Info } from 'lucide-react'
 import { RevealDiv } from '../components/Reveal'
+import { PriceRow, ServiceCard } from '../components/ServiceCard'
 import { SectionLead, SectionTitle } from '../components/ui'
-import { useAuth } from '../lib/auth'
-import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
-import { DOCS_NOTE, ORDER_HREF, SERVICES } from '../lib/content'
-
-type Card = (typeof SERVICES.cards)[number]
-
-function ServiceCard({ card, delay }: { card: Card; delay: number }) {
-  const { onOrderClick } = useAuth()
-
-  return (
-    <RevealDiv delay={delay} className="flex flex-1">
-      <a
-        {...linkProps(ORDER_HREF)}
-        onClick={onOrderClick}
-        className={cn(
-          'group flex h-[390px] w-full cursor-pointer flex-col items-start gap-3 rounded-[20px] bg-white p-7 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[6px] hover:border-[var(--accent)] hover:shadow-[0_14px_38px_rgba(11,18,32,0.12)]',
-          card.featured
-            ? 'border-[1.5px] border-[var(--accent)]'
-            : 'border border-[var(--line)]',
-        )}
-      >
-      <div className="flex items-center gap-2">
-        <span className="h-[6px] w-[6px] rounded-full bg-[var(--accent)]" />
-        <span className="text-[13px] font-bold tracking-[1px] text-[var(--ink-2)]">
-          {card.stage}
-        </span>
-      </div>
-
-      <h3 className="w-full text-[22px] leading-[28px] font-bold text-[var(--ink)]">
-        {card.title}
-      </h3>
-
-      {'description' in card && card.description && (
-        <p className="w-full text-[15px] leading-[22px] text-[var(--ink-2)]">{card.description}</p>
-      )}
-
-      {'needs' in card && card.needs && (
-        <div className="flex w-full flex-col gap-[7px]">
-          <p className="text-[13px] font-bold tracking-[1px] text-[var(--ink-2)]">Понадобится</p>
-          {card.needs.map((need) => (
-            <div key={need} className="flex w-full items-start gap-2">
-              <Check size={16} className="mt-[3px] shrink-0 text-[var(--accent)]" />
-              <span className="flex-1 text-[15px] leading-[21px] font-medium text-[var(--ink)]">
-                {need}
-              </span>
-            </div>
-          ))}
-          {'more' in card && card.more && (
-            <span className="text-[14px] font-semibold text-[var(--accent)]">{card.more}</span>
-          )}
-        </div>
-      )}
-
-      <div className="flex-1" />
-      <div className="h-px w-full bg-[var(--line)]" />
-
-      <div className="flex w-full items-center justify-between">
-        <span className="text-[24px] font-extrabold tracking-[-0.3px] text-[var(--ink)]">
-          {card.price}
-        </span>
-        <span
-          className={cn(
-            'flex h-[44px] w-[44px] items-center justify-center rounded-full transition-colors duration-300',
-            card.featured
-              ? 'bg-[var(--ink)] text-white'
-              : 'border-[1.5px] border-[var(--line)] bg-white text-[var(--ink)] group-hover:border-[var(--ink)] group-hover:bg-[var(--ink)] group-hover:text-white',
-          )}
-        >
-          <ArrowRight
-            size={18}
-            className="transition-transform duration-300 group-hover:translate-x-[3px]"
-          />
-        </span>
-        </div>
-      </a>
-    </RevealDiv>
-  )
-}
-
-function PriceRow({ card, delay }: { card: Card; delay: number }) {
-  const { onOrderClick } = useAuth()
-
-  return (
-    <RevealDiv delay={delay} className="w-full">
-      <a
-        {...linkProps(ORDER_HREF)}
-        onClick={onOrderClick}
-        className="group flex w-full cursor-pointer flex-col gap-[6px] border-b border-[var(--line)] py-4 transition-colors hover:border-[var(--accent)]"
-      >
-        <p className="w-full text-[18px] font-bold text-[var(--ink)] transition-colors group-hover:text-[var(--accent)]">
-          {card.title}
-        </p>
-        <div className="flex w-full items-center justify-between pt-1">
-          <span className="text-[18px] font-extrabold tracking-[-0.3px] text-[var(--ink)]">
-            {card.price}
-          </span>
-          <span className="flex h-[36px] w-[36px] items-center justify-center rounded-full border-[1.5px] border-[var(--line)] bg-white text-[var(--ink)] transition-colors duration-300 group-hover:border-[var(--ink)] group-hover:bg-[var(--ink)] group-hover:text-white">
-            <ArrowRight
-              size={16}
-              className="transition-transform duration-300 group-hover:translate-x-[3px]"
-            />
-          </span>
-        </div>
-      </a>
-    </RevealDiv>
-  )
-}
+import { CATALOG_PATH } from '../lib/catalog'
+import { DOCS_NOTE, SERVICES } from '../lib/content'
 
 export function Services() {
   const rows = [SERVICES.cards.slice(0, 3), SERVICES.cards.slice(3, 6)]
@@ -127,7 +23,7 @@ export function Services() {
           {rows.map((row, i) => (
             <div key={i} className="flex w-full items-stretch gap-6">
               {row.map((card, j) => (
-                <ServiceCard key={card.title} card={card} delay={j * 110} />
+                <ServiceCard key={card.title} card={card} delay={j * 110} height={390} />
               ))}
             </div>
           ))}
@@ -147,7 +43,7 @@ export function Services() {
             {DOCS_NOTE}
           </p>
           <a
-            {...linkProps(ORDER_HREF)}
+            {...linkProps(CATALOG_PATH)}
             className="group flex shrink-0 cursor-pointer items-center gap-2 text-[16px] font-semibold text-[var(--accent)] hover:underline"
           >
             Все услуги и цены

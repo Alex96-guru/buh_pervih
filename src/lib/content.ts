@@ -6,11 +6,13 @@ export const VK_HREF = 'https://vk.ru/buhgalterskieuslugy'
 export const MAIL_HREF = 'mailto:Buhpervih@yandex.ru'
 export const PROFI_HREF = 'https://profi.ru/profile/PoponinaOV'
 
+// Адреса с ведущим слешем, чтобы меню работало и со страниц входа и регистрации.
 export const NAV_ITEMS = [
-  { label: 'Услуги и цены', href: '#services' },
-  { label: 'Как работаем', href: '#process' },
-  { label: 'Команда', href: '#team' },
-  { label: 'Контакты', href: '#contacts' },
+  { label: 'Услуги и цены', href: '/services' },
+  { label: 'Как работаем', href: '/#process' },
+  // В макете «Команда» подсвечена на странице «О компании» — туда и ведём.
+  { label: 'Команда', href: '/about' },
+  { label: 'Контакты', href: '/contacts' },
 ]
 
 export const HERO = {
@@ -169,18 +171,33 @@ export const TEAM = {
       role: 'Генеральный директор',
       note: 'В бухгалтерии с 2003 года, с 2015-го ведёт клиентов удалённо по всей России',
       photo: '/image-1.webp',
+      education: 'Московский университет коммерции, 2006 — «Бухгалтерский учёт, анализ и аудит».',
+      experience: [
+        '2003–2015 — бухгалтер, ЗАО «Верещагинская ПМК-17»',
+        'с 2015 — бухгалтер на удалёнке, клиенты по всей России',
+        'с 2025 — генеральный директор ООО ЦБО «Бухгалтерия Первых»',
+      ],
     },
     {
       name: 'Светлана Александровна',
       role: 'Бухгалтер',
       note: '20 лет в налоговых органах: камеральные проверки по НДФЛ, налогу на прибыль и спецрежимам',
       photo: '/image-3.webp',
+      education: 'Международный институт экономики и права, 2009 — экономист, «Финансы и кредит».',
+      experience: [
+        '2006–2026 — государственная гражданская служба в налоговых органах РФ, отдел камеральных налоговых проверок: НДФЛ, налог на прибыль организаций, специальные налоговые режимы',
+      ],
     },
     {
       name: 'Ирина Алексеевна',
       role: 'Бухгалтер',
       note: '19 лет в ФНС, работа с налогоплательщиками',
       photo: '/image-5.webp',
+      education:
+        'Пермский институт экономики и финансов, 2009 — «Финансы и кредит»; Московский институт экономики, менеджмента и права, 2009 — «Финансы и кредит».',
+      experience: [
+        '2006–2025 — государственная гражданская служба в ФНС, отдел работы с налогоплательщиками',
+      ],
     },
   ],
 }
@@ -281,18 +298,18 @@ export const FOOTER = {
     {
       title: 'Услуги',
       links: [
-        { label: 'ИП и ООО', href: '#services' },
-        { label: 'Физлица', href: '#services' },
+        { label: 'ИП и ООО', href: '/services#ip' },
+        { label: 'Физлица', href: '/services#person' },
         { label: 'Консультация', href: ORDER_HREF },
       ],
     },
     {
       title: 'Компания',
       links: [
-        { label: 'Как работаем', href: '#process' },
-        { label: 'Команда', href: '#team' },
-        { label: 'Контакты', href: '#contacts' },
-        { label: 'Реквизиты' },
+        { label: 'Как работаем', href: '/#process' },
+        { label: 'Команда', href: '/about' },
+        { label: 'Контакты', href: '/contacts' },
+        { label: 'Реквизиты', href: '/contacts#requisites' },
       ],
     },
     {
@@ -309,4 +326,24 @@ export const FOOTER = {
   ] as Array<{ title: string; links: Array<{ label: string; href?: string }> }>,
   copyright: '© 2026 ООО ЦБО «Бухгалтерия Первых» · ИНН 5981014378 · КПП 598101001',
   payment: 'Оплата: карта, СБП, расчётный счёт',
+}
+
+export const CONTACTS_PATH = '/contacts'
+
+/** Страница «Контакты» — в макете её нет, тексты собраны из главной и футера. */
+export const CONTACTS_PAGE = {
+  title: 'Контакты',
+  lead: 'Работаем удалённо по всей России. Пишите в любой удобный мессенджер или на почту.',
+}
+
+/** Только то, что уже есть на сайте. ОГРН, адрес и банк добавить, когда будут. */
+export const REQUISITES = {
+  title: 'Реквизиты',
+  rows: [
+    { label: 'Организация', value: 'ООО ЦБО «Бухгалтерия Первых»' },
+    { label: 'ИНН', value: '5981014378', copy: true },
+    { label: 'КПП', value: '598101001', copy: true },
+    { label: 'Оплата', value: 'Карта, СБП, расчётный счёт' },
+    { label: 'Часы работы', value: 'Пн–Пт 9:00–18:00 МСК' },
+  ] as Array<{ label: string; value: string; copy?: boolean }>,
 }

@@ -11,7 +11,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE users (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email         text NOT NULL,
-  -- Только хеш argon2. Сам пароль не хранится и не логируется нигде.
+  -- Только хеш (scrypt). Сам пароль не хранится и не логируется нигде.
   password_hash text NOT NULL,
   full_name     text NOT NULL,
   phone         text,
