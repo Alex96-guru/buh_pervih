@@ -77,8 +77,10 @@ export const DOCS_NOTE =
 export const SERVICES = {
   title: 'Услуги и цены',
   lead: 'Цены — за стандартный случай. Если задача сложнее, назовём точную сумму до начала работы.',
+  // href — страница услуги в каталоге: по клику открываем подробности, а не заявку.
   cards: [
     {
+      href: '/services/vedenie-usn',
       stage: 'Вести',
       title: 'Ведение ИП и ООО на УСН',
       description: 'Учёт и отчётность по УСН под ключ — состав обсудим на консультации',
@@ -86,6 +88,7 @@ export const SERVICES = {
       featured: false,
     },
     {
+      href: '/services/uvedomlenie-usn-dohody',
       stage: 'Отчётность по УСН',
       title: 'Уведомление по налогу УСН за квартал',
       needs: ['ИНН', 'Выписка из банка (Excel или PDF)', 'Есть ли ЭЦП'],
@@ -94,6 +97,7 @@ export const SERVICES = {
       featured: true,
     },
     {
+      href: '/services/deklaraciya-usn-dohody',
       stage: 'Отчётность по УСН',
       title: 'Декларация УСН «доходы» с расчётом',
       needs: ['ИНН', 'Выписка из банка за год', 'Есть ли ЭЦП'],
@@ -102,6 +106,7 @@ export const SERVICES = {
       featured: false,
     },
     {
+      href: '/services/nulevaya-usn-dohody',
       stage: 'Отчётность по УСН',
       title: 'Нулевая декларация УСН',
       needs: ['ИНН', 'Есть ли ЭЦП'],
@@ -109,6 +114,7 @@ export const SERVICES = {
       featured: false,
     },
     {
+      href: '/services/zakrytie-ip',
       stage: 'Закрыть',
       title: 'Заявление на закрытие ИП',
       description: 'Готовое заявление в PDF или инструкция, как закрыть ИП через личный кабинет',
@@ -116,6 +122,8 @@ export const SERVICES = {
       featured: false,
     },
     {
+      // Здесь собраны несколько вычетов — ведём в раздел каталога, а не в одну услугу.
+      href: '/services#person',
       stage: 'Физлица',
       title: '3-НДФЛ: вычеты',
       needs: ['Справка 2-НДФЛ', 'Документы об оплате (лечение, учёба, жильё)', 'Реквизиты для возврата'],

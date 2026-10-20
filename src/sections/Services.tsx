@@ -23,7 +23,13 @@ export function Services() {
           {rows.map((row, i) => (
             <div key={i} className="flex w-full items-stretch gap-6">
               {row.map((card, j) => (
-                <ServiceCard key={card.title} card={card} delay={j * 110} height={390} />
+                <ServiceCard
+                  key={card.title}
+                  card={card}
+                  href={card.href}
+                  delay={j * 110}
+                  height={390}
+                />
               ))}
             </div>
           ))}
@@ -32,7 +38,7 @@ export function Services() {
         {/* Мобайл: строки прайса */}
         <div className="flex w-full flex-col lg:hidden">
           {SERVICES.cards.map((card, i) => (
-            <PriceRow key={card.title} card={card} delay={i * 70} />
+            <PriceRow key={card.title} card={card} href={card.href} delay={i * 70} />
           ))}
         </div>
 

@@ -21,6 +21,31 @@ export function initialsOf(fullName: string): string {
     .join('')
 }
 
+/**
+ * Куда вернуть после входа. Хранится во вкладке, а не в адресе: человек может
+ * перейти со входа на регистрацию, и путь не должен потеряться.
+ */
+const RETURN_KEY = 'bp_return_to'
+
+function rememberReturnPath(path: string) {
+  try {
+    sessionStorage.setItem(RETURN_KEY, path)
+  } catch {
+    // Хранилище недоступно (приватный режим) — после входа просто попадём в кабинет.
+  }
+}
+
+function takeReturnPath(): string | null {
+  try {
+    const path = sessionStorage.getItem(RETURN_KEY)
+    sessionStorage.removeItem(RETURN_KEY)
+    // Только адреса своего сайта: «//evil.com» тоже начинается со слеша.
+    return path && path.startsWith('/') && !path.startsWith('//') ? path : null
+  } catch {
+    return null
+  }
+}
+
 type AuthContextValue = {
   user: AuthUser | null
   isAuthenticated: boolean
@@ -60,11 +85,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  /** Вызывается формами после успешного ответа сервера. */
+  /**
+   * Вызывается формами после успешного ответа сервера. Если человека прислала
+   * на вход кнопка заказа — возвращаем туда, откуда он пришёл.
+   */
   const signedIn = useCallback(
     (next: AuthUser) => {
       setUser(next)
-      navigate(next.role === 'admin' ? ADMIN_PATH : CABINET_PATH, { replace: true })
+      const back = takeReturnPath()
+      navigate(back ?? (next.role === 'admin' ? ADMIN_PATH : CABINET_PATH), { replace: true })
     },
     [navigate],
   )
@@ -83,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) return
 
       event.preventDefault()
+      rememberReturnPath(window.location.pathname + window.location.hash)
       navigate('/login')
     },
     [user, navigate],
