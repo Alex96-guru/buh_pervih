@@ -7,7 +7,7 @@ import {
   createSession,
   destroySession,
 } from '../auth/sessions.mjs'
-import { REQUIRE_VERIFIED_EMAIL } from '../auth/config.mjs'
+import { isAdminEmail, REQUIRE_VERIFIED_EMAIL } from '../auth/config.mjs'
 
 export const authRouter = Router()
 
@@ -71,15 +71,29 @@ authRouter.post('/register', async (req, res, next) => {
 
     const passwordHash = await hashPassword(password)
 
+    // Почта администратора: сразу админ и без подтверждения почты.
+    const admin = isAdminEmail(mail)
+
     const { rows } = await pool.query(
-      `INSERT INTO users (email, password_hash, full_name, phone, client_type, company_name, inn)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (email, password_hash, full_name, phone, client_type, company_name, inn,
+                          role, email_verified_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [mail, passwordHash, name, tel, type, companyName?.trim() || null, innDigits || null],
+      [
+        mail,
+        passwordHash,
+        name,
+        tel,
+        type,
+        companyName?.trim() || null,
+        innDigits || null,
+        admin ? 'admin' : 'client',
+        admin ? new Date() : null,
+      ],
     )
 
     // Строгий режим: сессию не выдаём, пока почта не подтверждена.
-    if (REQUIRE_VERIFIED_EMAIL) {
+    if (REQUIRE_VERIFIED_EMAIL && !admin) {
       return res.status(201).json({ user: publicUser(rows[0]), needsEmailVerification: true })
     }
 
@@ -113,7 +127,7 @@ authRouter.post('/login', async (req, res, next) => {
       ? await pool.query('SELECT * FROM users WHERE lower(email) = lower($1)', [raw])
       : await pool.query('SELECT * FROM users WHERE phone = $1', [normalizePhone(raw)])
 
-    const user = rows[0]
+    let user = rows[0]
 
     // Пароль проверяем даже когда пользователь не найден: иначе по скорости
     // ответа можно узнать, зарегистрирован ли такой телефон.
@@ -123,6 +137,19 @@ authRouter.post('/login', async (req, res, next) => {
 
     if (!user || !ok) {
       return res.status(401).json({ error: 'Неверный логин или пароль', field: 'password' })
+    }
+
+    // Если почту администратора зарегистрировали раньше, чем она попала
+    // в настройки, — достраиваем права при входе.
+    if (isAdminEmail(user.email) && (user.role !== 'admin' || user.email_verified_at === null)) {
+      const { rows: updated } = await pool.query(
+        `UPDATE users
+            SET role = 'admin', email_verified_at = coalesce(email_verified_at, now())
+          WHERE id = $1
+          RETURNING *`,
+        [user.id],
+      )
+      user = updated[0]
     }
 
     if (REQUIRE_VERIFIED_EMAIL && user.email_verified_at === null) {
