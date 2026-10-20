@@ -16,7 +16,7 @@ export const REQUIRE_VERIFIED_EMAIL = true
  * и подтверждать почту не нужно. Можно переопределить переменной
  * ADMIN_EMAIL на сервере, не трогая код.
  */
-export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin1@gmail.com').trim().toLowerCase()
+export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@gmail.com').trim().toLowerCase()
 
 export function isAdminEmail(email) {
   return String(email ?? '').trim().toLowerCase() === ADMIN_EMAIL
