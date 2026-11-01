@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { OrderConversation } from '../OrderConversation'
 import { api } from '../../lib/api'
 import { STATUS_LABELS, formatDateTime, formatRub } from '../../lib/orders'
@@ -10,6 +11,7 @@ export function AdminOrders({ currentUserId }: { currentUserId: string }) {
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -39,10 +41,22 @@ export function AdminOrders({ currentUserId }: { currentUserId: string }) {
   }, [offset])
 
   const selected = orders.find((order) => order.id === selectedId)
+  const showMobileDetail = mobileOpen && Boolean(selected)
+
+  function openOrder(id: string) {
+    setSelectedId(id)
+    setMobileOpen(true)
+    requestAnimationFrame(() => document.getElementById('admin-orders')?.scrollIntoView({ block: 'start' }))
+  }
+
+  function changePage(nextOffset: number) {
+    setOffset(nextOffset)
+    setMobileOpen(false)
+  }
 
   return (
-    <div className="flex w-full flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+    <div id="admin-orders" className="flex w-full scroll-mt-[84px] flex-col gap-5">
+      <div className={`${showMobileDetail ? 'hidden' : 'flex'} flex-wrap items-end justify-between gap-2 lg:flex`}>
         <div>
           <h2 className="text-[22px] font-bold text-[var(--ink)]">Заявки и заказы</h2>
           <p className="text-[15px] text-[var(--ink-2)]">{loading ? 'Загружаем…' : `Всего: ${total}`} · список обновляется каждые 10 секунд</p>
@@ -52,26 +66,37 @@ export function AdminOrders({ currentUserId }: { currentUserId: string }) {
       {!loading && !error && total === 0 && <p className="rounded-[20px] border border-[var(--line)] bg-white p-6 text-[var(--ink-2)]">Пока нет заявок.</p>}
       {orders.length > 0 && (
         <div className="grid gap-5 lg:grid-cols-[minmax(280px,380px)_minmax(0,1fr)]">
-          <div className="flex flex-col gap-2">
+          <div className={`${showMobileDetail ? 'hidden' : 'flex'} min-w-0 flex-col gap-2 lg:flex`}>
             {orders.map((order) => (
-              <button key={order.id} type="button" onClick={() => setSelectedId(order.id)} className={`w-full cursor-pointer rounded-[16px] border p-4 text-left ${selectedId === order.id ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--line)] bg-white hover:border-[var(--accent)]'}`}>
-                <span className="text-[13px] font-semibold text-[var(--ink-2)]">Заказ № {order.number} · {STATUS_LABELS[order.status]} · {formatDateTime(order.createdAt)}</span>
-                <span className="mt-1 block text-[16px] font-semibold text-[var(--ink)]">{order.serviceTitle}</span>
-                {order.parentOrderNumber && <span className="mt-1 block text-[13px] font-semibold text-[var(--accent)]">Дополнительная к заказу № {order.parentOrderNumber}</span>}
-                <span className="mt-1 block text-[14px] text-[var(--ink-2)]">{order.customer.fullName} · {order.amount ? formatRub(order.amount) : order.price}</span>
+              <button key={order.id} type="button" onClick={() => openOrder(order.id)} className={`group flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-[14px] border px-3 py-2.5 text-left lg:items-start lg:rounded-[16px] lg:p-4 ${selectedId === order.id ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--line)] bg-white hover:border-[var(--accent)]'}`}>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5 lg:gap-1">
+                  <span className="flex min-w-0 items-center justify-between gap-2 text-[12px] font-semibold text-[var(--ink-2)] lg:text-[13px]">
+                    <span>№ {order.number} · {STATUS_LABELS[order.status]}</span>
+                    <span className="hidden shrink-0 lg:inline">{formatDateTime(order.createdAt)}</span>
+                  </span>
+                  <span className="truncate text-[15px] font-semibold text-[var(--ink)] lg:text-[16px]">{order.serviceTitle}</span>
+                  <span className="truncate text-[13px] text-[var(--ink-2)] lg:text-[14px]">{order.customer.fullName}<span className="hidden lg:inline"> · {order.amount ? formatRub(order.amount) : order.price}</span></span>
+                  {order.parentOrderNumber && <span className="hidden text-[13px] font-semibold text-[var(--accent)] lg:block">Дополнительная к заказу № {order.parentOrderNumber}</span>}
+                </span>
+                <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-[var(--ink-2)] lg:hidden" />
               </button>
             ))}
             {total > 50 && (
               <div className="flex items-center justify-between gap-3 pt-2 text-[14px]">
-                <button type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))} className="cursor-pointer font-semibold text-[var(--accent)] disabled:opacity-40">Назад</button>
+                <button type="button" disabled={offset === 0} onClick={() => changePage(Math.max(0, offset - 50))} className="cursor-pointer font-semibold text-[var(--accent)] disabled:opacity-40">Назад</button>
                 <span>{offset + 1}–{Math.min(offset + 50, total)} из {total}</span>
-                <button type="button" disabled={offset + 50 >= total} onClick={() => setOffset(offset + 50)} className="cursor-pointer font-semibold text-[var(--accent)] disabled:opacity-40">Далее</button>
+                <button type="button" disabled={offset + 50 >= total} onClick={() => changePage(offset + 50)} className="cursor-pointer font-semibold text-[var(--accent)] disabled:opacity-40">Далее</button>
               </div>
             )}
           </div>
           {selected && (
-            <div className="flex min-w-0 flex-col gap-4">
-              <section className="rounded-[20px] border border-[var(--line)] bg-white p-5 lg:p-6">
+            <div className={`${showMobileDetail ? 'flex' : 'hidden'} min-w-0 flex-col gap-4 lg:flex`}>
+              <div className="flex flex-col gap-2 lg:hidden">
+                <button type="button" onClick={() => setMobileOpen(false)} className="flex min-h-[44px] w-fit cursor-pointer items-center gap-2 text-[14px] font-semibold text-[var(--accent)]"><ArrowLeft size={18} aria-hidden="true" />Все заявки</button>
+                <div className="min-w-0"><p className="text-[13px] text-[var(--ink-2)]">Заказ № {selected.number} · {STATUS_LABELS[selected.status]}</p><h3 className="truncate text-[18px] font-bold text-[var(--ink)]">{selected.customer.fullName}</h3></div>
+              </div>
+              <div className="order-1 lg:order-2"><OrderConversation key={selected.id} orderId={selected.id} currentUserId={currentUserId} isAdmin /></div>
+              <section className="order-2 rounded-[20px] border border-[var(--line)] bg-white p-5 lg:order-1 lg:p-6">
                 <h3 className="text-[20px] font-bold text-[var(--ink)]">Заказ № {selected.number}</h3>
                 <p className="mt-2 text-[16px] font-semibold text-[var(--ink)]">{selected.serviceTitle}</p>
                 {selected.items.length > 1 && <div className="mt-3 flex flex-col gap-2">{selected.items.map((item) => <div key={item.serviceSlug} className="flex justify-between gap-3 rounded-[10px] border border-[var(--line)] p-3 text-[14px]"><span>{item.serviceTitle}</span><span className="shrink-0 font-semibold">{item.price}</span></div>)}</div>}
@@ -86,7 +111,6 @@ export function AdminOrders({ currentUserId }: { currentUserId: string }) {
                   {selected.customer.email && <p><a className="break-all text-[var(--accent)] hover:underline" href={`mailto:${selected.customer.email}`}>{selected.customer.email}</a></p>}
                 </div>
               </section>
-              <OrderConversation key={selected.id} orderId={selected.id} currentUserId={currentUserId} isAdmin />
             </div>
           )}
         </div>
