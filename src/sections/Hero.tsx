@@ -1,13 +1,11 @@
 import { MessengerTile } from '../components/MessengerTile'
 import { useReveal } from '../components/Reveal'
 import { Button } from '../components/ui'
-import { useAuth } from '../lib/auth'
-import { HERO, MESSENGERS, ORDER_HREF } from '../lib/content'
+import { HERO, MESSENGERS } from '../lib/content'
 
 export function Hero() {
   const left = useReveal<HTMLDivElement>()
   const right = useReveal<HTMLDivElement>(140)
-  const { onOrderClick } = useAuth()
 
   return (
     <section
@@ -34,7 +32,7 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col gap-3 lg:flex-row lg:pt-2">
-            <Button href={ORDER_HREF} className="w-full lg:w-auto" onClick={onOrderClick}>
+            <Button href="/services" className="w-full lg:w-auto">
               Оставить заявку
             </Button>
             <Button href="#services" variant="secondary" className="w-full lg:w-auto">

@@ -83,12 +83,9 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
             placeholder="Введите пароль"
             error={errors.password}
           />
-          <button
-            type="button"
-            className="w-fit cursor-pointer text-[14px] font-semibold text-[var(--accent)] hover:underline"
-          >
-            Забыли пароль?
-          </button>
+          <a href="mailto:Buhpervih@yandex.ru?subject=%D0%92%D0%BE%D1%81%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0" className="w-fit text-[14px] font-semibold text-[var(--accent)] hover:underline">
+            Забыли пароль? Напишите нам
+          </a>
         </div>
 
         {formError && (
@@ -99,18 +96,6 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
 
         <SubmitButton disabled={sending}>{sending ? 'Входим…' : 'Войти'}</SubmitButton>
 
-        <div className="flex w-full items-center gap-3">
-          <span className="h-px flex-1 bg-[var(--line)]" />
-          <span className="text-[13px] text-[var(--ink-2)]">или</span>
-          <span className="h-px flex-1 bg-[var(--line)]" />
-        </div>
-
-        <button
-          type="button"
-          className="flex h-[56px] w-full cursor-pointer items-center justify-center rounded-[12px] border-[1.5px] border-[#B9C3D6] bg-[#FFFFFF99] px-7 text-[16px] font-bold text-[var(--ink)] transition-colors hover:bg-white"
-        >
-          Получить код в Telegram
-        </button>
       </form>
 
       <p className="flex items-center gap-[6px] text-[15px] text-[var(--ink-2)]">

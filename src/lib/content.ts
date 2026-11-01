@@ -19,7 +19,7 @@ export const HERO = {
   title: 'Бухгалтерия для ИП, ООО и физлиц — удалённо, по всей России',
   subtitle:
     'Центр бухгалтерского обслуживания «Бухгалтерия Первых». Вы присылаете документы по списку, мы считаем налоги, сдаём отчёты и заранее пишем, что и когда заплатить.',
-  keyPhrase: 'Оплата — после того, как работа сделана.',
+  keyPhrase: 'Выберите услугу и оформите заказ на сайте. Общую сумму увидите до оплаты.',
   hours: 'Отвечаем в рабочий день. Пн–Пт 9:00–18:00 МСК',
   photo: '/image-1.webp',
   personName: 'Ольга Попонина, руководитель и главный бухгалтер',
@@ -154,7 +154,6 @@ export const AUDIENCE = {
   ],
   photo:
     'https://images.unsplash.com/photo-1735825764485-93a381fd5779?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3OTA5MDY0NzB8&ixlib=rb-4.1.0&q=80&w=1080',
-  photoBadge: '[заменить на реальное фото]',
 }
 
 export const PROCESS = {

@@ -1,6 +1,5 @@
 import { ArrowRight, Check } from 'lucide-react'
 import { RevealDiv } from './Reveal'
-import { useAuth } from '../lib/auth'
 import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
 import { ORDER_HREF } from '../lib/content'
@@ -17,12 +16,10 @@ export type ServiceCardData = {
 }
 
 /**
- * Куда ведёт карточка: на страницу услуги, если она есть, иначе — к заявке
- * (неавторизованного onOrderClick отправит на вход).
+ * Куда ведёт карточка: на страницу услуги, если она есть, иначе — в Telegram.
  */
-function useCardLink(href?: string) {
-  const { onOrderClick } = useAuth()
-  return href ? linkProps(href) : { ...linkProps(ORDER_HREF), onClick: onOrderClick }
+function cardLink(href?: string) {
+  return linkProps(href ?? ORDER_HREF)
 }
 
 /** Десктоп: карточка с ценой и стрелкой. */
@@ -38,7 +35,7 @@ export function ServiceCard({
   /** На главной карточки чуть ниже, чем в каталоге. */
   height?: 390 | 400
 }) {
-  const link = useCardLink(href)
+  const link = cardLink(href)
 
   return (
     <RevealDiv delay={delay} className="flex min-w-0 flex-1">
@@ -112,7 +109,7 @@ export function PriceRow({
   delay: number
   href?: string
 }) {
-  const link = useCardLink(href)
+  const link = cardLink(href)
 
   return (
     <RevealDiv delay={delay} className="w-full">

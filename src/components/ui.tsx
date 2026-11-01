@@ -118,3 +118,26 @@ export function SectionLead({
     </p>
   )
 }
+
+/** Белая карточка с заголовком — как «Что понадобится» на странице услуги. */
+export function Panel({
+  title,
+  className,
+  children,
+}: {
+  title?: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <section
+      className={cn(
+        'flex w-full flex-col gap-3 rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-[14px] lg:p-7',
+        className,
+      )}
+    >
+      {title && <h2 className="text-[20px] font-bold text-[var(--ink)]">{title}</h2>}
+      {children}
+    </section>
+  )
+}

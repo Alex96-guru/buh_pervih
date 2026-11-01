@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Check, Info, Wallet } from 'lucide-react'
-import { useAuth } from '../lib/auth'
 import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
 import { ORDER_HREF, PAYMENT_NOTE, PICKER } from '../lib/content'
@@ -20,7 +19,6 @@ function Callout({ icon, children }: { icon: 'info' | 'wallet'; children: string
 export function ServicePicker() {
   const [active, setActive] = useState(1)
   const current = PICKER[active]
-  const { onOrderClick } = useAuth()
 
   return (
     <div className="flex w-full flex-col items-start gap-[18px] rounded-[20px] border-[1.5px] border-white bg-[#FFFFFFB3] p-7 backdrop-blur-[12px] lg:w-[560px] lg:shrink-0">
@@ -76,7 +74,6 @@ export function ServicePicker() {
 
       <a
         {...linkProps(ORDER_HREF)}
-        onClick={onOrderClick}
         className="flex h-[56px] w-full cursor-pointer items-center justify-center rounded-[12px] bg-[var(--ink)] px-7 text-[16px] font-bold text-white transition-colors hover:bg-[#1a2740]"
       >
         Оставить заявку

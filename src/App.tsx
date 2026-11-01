@@ -6,9 +6,12 @@ import { AboutPage } from './pages/AboutPage'
 import { AdminPage } from './pages/AdminPage'
 import { CabinetPage } from './pages/CabinetPage'
 import { CatalogPage } from './pages/CatalogPage'
+import { CheckoutPage } from './pages/CheckoutPage'
 import { ContactsPage } from './pages/ContactsPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
+import { OrderPage } from './pages/OrderPage'
+import { PrivacyPage } from './pages/PrivacyPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ServicePage } from './pages/ServicePage'
 
@@ -24,6 +27,9 @@ export function App() {
           <Route path={CONTACTS_PATH} element={<ContactsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/checkout/:slug" element={<CheckoutPage />} />
+          <Route path="/orders/:id" element={<OrderPage />} />
           <Route path="/cabinet" element={<CabinetPage />} />
           <Route path="/admin" element={<AdminPage />} />
           {/* Неизвестный адрес — показываем главную, чтобы не ловить пустой экран. */}

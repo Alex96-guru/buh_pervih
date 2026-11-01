@@ -4,12 +4,8 @@ const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
-/**
- * Строгий режим: без подтверждённой почты войти нельзя.
- * Регистрация создаёт пользователя, но вход отклоняется, пока
- * users.email_verified_at пуст.
- */
-export const REQUIRE_VERIFIED_EMAIL = true
+/** Пока нет отправки писем, почта при регистрации не подтверждается. */
+export const REQUIRE_VERIFIED_EMAIL = false
 
 /**
  * Почта администратора. Кто зарегистрируется с ней — сразу админ,

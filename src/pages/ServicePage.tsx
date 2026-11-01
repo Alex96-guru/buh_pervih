@@ -1,29 +1,32 @@
 import { Fragment } from 'react'
 import { Check, ChevronRight, Info } from 'lucide-react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { Button } from '../components/ui'
-import { useAuth } from '../lib/auth'
 import { CATALOG_PATH, groupTitle } from '../lib/catalog'
 import type { CatalogNeed, Service } from '../lib/catalog'
 import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
-import { DOCS_NOTE, ORDER_HREF } from '../lib/content'
+import { DOCS_NOTE } from '../lib/content'
+import { checkoutPath, parseOrderCart, withOrderCart } from '../lib/orders'
 import { useService } from '../lib/useServices'
 
-/** Цена, «Заказать» и подсказка про документы. На десктопе — правая колонка. */
-function Summary({ price }: { price: string }) {
-  const { onOrderClick } = useAuth()
-
+/**
+ * Цена, «Заказать» и подсказка про документы. На десктопе — правая колонка.
+ * Неавторизованного оформление само отправит на вход и вернёт обратно.
+ */
+function Summary({ slug, price, parentOrderId, cart }: { slug: string; price: string; parentOrderId: string | null; cart: string[] }) {
   return (
     <div className="flex w-full flex-col gap-[14px] rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-4 lg:p-7">
       <p className="text-[40px] font-extrabold tracking-[-1.2px] text-[var(--accent)] lg:text-[44px] lg:tracking-[-1.32px]">
         {price}
       </p>
-      <Button href={ORDER_HREF} onClick={onOrderClick} className="w-full">
-        Заказать
-      </Button>
+      {(!parentOrderId || /\d/.test(price)) ? (
+        <Button href={withOrderCart(checkoutPath(slug), parentOrderId, cart.filter((item) => item !== slug))} className="w-full">
+          {parentOrderId ? 'Добавить к заказу' : 'Заказать'}
+        </Button>
+      ) : <p className="text-[14px] text-[var(--ink-2)]">Для докупки выберите услугу с указанной ценой.</p>}
       <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
         <Info size={20} className="mt-px shrink-0 text-[var(--accent)]" />
         <p className="flex-1 text-[15px] leading-[22px] font-medium text-[var(--ink)]">
@@ -85,6 +88,9 @@ function TextBlock({
 
 export function ServicePage() {
   const { slug = '' } = useParams()
+  const [params] = useSearchParams()
+  const parentOrderId = params.get('from')
+  const cart = parseOrderCart(params.get('items'))
   const { service, loading, error, notFound } = useService(slug)
 
   // Услугу удалили или адрес с опечаткой — ведём в каталог, а не на пустую страницу.
@@ -96,7 +102,7 @@ export function ServicePage() {
 
       <main className="w-full bg-[var(--page-bg)] px-5 pt-10 pb-[72px] lg:px-[120px] lg:pt-12 lg:pb-[120px]">
         {service ? (
-          <ServiceContent service={service} />
+          <ServiceContent service={service} parentOrderId={parentOrderId} cart={cart} />
         ) : (
           <p
             role={error ? 'alert' : undefined}
@@ -115,12 +121,12 @@ export function ServicePage() {
   )
 }
 
-function ServiceContent({ service }: { service: Service }) {
+function ServiceContent({ service, parentOrderId, cart }: { service: Service; parentOrderId: string | null; cart: string[] }) {
   const { title, audience, needs, result } = service
 
   const crumbs = [
-    { label: 'Услуги', href: CATALOG_PATH },
-    { label: groupTitle(service.group), href: `${CATALOG_PATH}#${service.group}` },
+    { label: 'Услуги', href: withOrderCart(CATALOG_PATH, parentOrderId, cart) },
+    { label: groupTitle(service.group), href: `${withOrderCart(CATALOG_PATH, parentOrderId, cart)}#${service.group}` },
   ]
 
   return (
@@ -151,7 +157,7 @@ function ServiceContent({ service }: { service: Service }) {
 
       {/* Мобайл: цена и кнопка сразу под заголовком */}
       <div className="lg:hidden">
-        <Summary price={service.price} />
+        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
       </div>
 
       <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-start lg:gap-20 lg:pt-2">
@@ -178,7 +184,7 @@ function ServiceContent({ service }: { service: Service }) {
 
         {/* Десктоп: сводка справа и едет вместе с прокруткой */}
         <div className="hidden w-[380px] shrink-0 lg:sticky lg:top-[104px] lg:block">
-          <Summary price={service.price} />
+          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
         </div>
       </div>
     </div>

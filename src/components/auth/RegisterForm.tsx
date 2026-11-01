@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { MailCheck } from 'lucide-react'
 import { Field, PasswordField, Segmented, SubmitButton } from './fields'
 import { useAuth } from '../../lib/auth'
 import { ApiError, api } from '../../lib/api'
@@ -39,7 +38,6 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
   const [errors, setErrors] = useState<Errors>({})
   const [formError, setFormError] = useState('')
   const [sending, setSending] = useState(false)
-  const [sentTo, setSentTo] = useState('')
 
   function validate(): Errors {
     const next: Errors = {}
@@ -63,7 +61,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     const tel = validatePhone(phone)
     if (tel) next.phone = tel
 
-    // Почта обязательна: на неё приходит подтверждение, без него нет входа.
+    // Почта нужна для связи по заказу.
     const mail = validateEmail(email, true)
     if (mail) next.email = mail
 
@@ -93,11 +91,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
         inn: inn || undefined,
       })
 
-      if (result.needsEmailVerification) {
-        setSentTo(email.trim())
-      } else {
-        signedIn(result.user)
-      }
+      signedIn(result.user)
     } catch (err) {
       if (err instanceof ApiError && err.field) {
         setErrors({ [err.field]: err.message })
@@ -111,29 +105,6 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
 
   function clear(field: Field_) {
     setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev))
-  }
-
-  if (sentTo) {
-    return (
-      <div className="flex w-full flex-col items-center gap-6">
-        <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[var(--line)] bg-white p-8 text-center">
-          <MailCheck size={40} className="text-[var(--accent)]" />
-          <h2 className="text-[24px] font-bold text-[var(--ink)]">Подтвердите почту</h2>
-          <p className="text-[16px] leading-[24px] text-[var(--ink-2)]">
-            Отправили письмо на <span className="font-semibold text-[var(--ink)]">{sentTo}</span>.
-            Перейдите по ссылке из него — она действует сутки. После этого можно войти.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onSwitchToLogin}
-          className="cursor-pointer text-[15px] font-bold text-[var(--accent)] hover:underline"
-        >
-          Перейти ко входу
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -265,7 +236,8 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
         </SubmitButton>
 
         <p className="w-full text-[14px] leading-[20px] text-[var(--ink-2)]">
-          Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
+          Нажимая кнопку, вы соглашаетесь с{' '}
+          <a href="/privacy" target="_blank" rel="noreferrer" className="font-semibold text-[var(--accent)] hover:underline">условиями обработки персональных данных</a>.
         </p>
       </form>
 

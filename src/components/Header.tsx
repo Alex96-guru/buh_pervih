@@ -7,11 +7,11 @@ import { Button } from './ui'
 import { useAuth } from '../lib/auth'
 import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
-import { NAV_ITEMS, ORDER_HREF } from '../lib/content'
+import { NAV_ITEMS } from '../lib/content'
 
 export function Header() {
   const [open, setOpen] = useState(false)
-  const { onOrderClick, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   const { pathname } = useLocation()
   // Подсвечиваем пункт, ведущий на текущую страницу (якоря главной — нет).
   const isCurrent = (href: string) => href === pathname
@@ -41,7 +41,7 @@ export function Header() {
         {isAuthenticated ? (
           <UserMenu />
         ) : (
-          <Button href={ORDER_HREF} size={44} onClick={onOrderClick}>
+          <Button href="/services" size={44}>
             Оставить заявку
           </Button>
         )}
@@ -55,7 +55,7 @@ export function Header() {
           {isAuthenticated ? (
             <UserMenu size={36} />
           ) : (
-            <Button href={ORDER_HREF} size={40} className="text-[15px]" onClick={onOrderClick}>
+            <Button href="/services" size={40} className="text-[15px]">
               Заявка
             </Button>
           )}

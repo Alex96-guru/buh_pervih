@@ -7,7 +7,7 @@ import {
   createSession,
   destroySession,
 } from '../auth/sessions.mjs'
-import { isAdminEmail, REQUIRE_VERIFIED_EMAIL } from '../auth/config.mjs'
+import { REQUIRE_VERIFIED_EMAIL } from '../auth/config.mjs'
 
 export const authRouter = Router()
 
@@ -49,7 +49,7 @@ authRouter.post('/register', async (req, res, next) => {
 
     const mail = String(email ?? '').trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) {
-      return badRequest(res, 'email', 'Укажите почту — на неё придёт подтверждение')
+      return badRequest(res, 'email', 'Укажите адрес электронной почты')
     }
 
     const tel = normalizePhone(phone)
@@ -71,9 +71,6 @@ authRouter.post('/register', async (req, res, next) => {
 
     const passwordHash = await hashPassword(password)
 
-    // Почта администратора: сразу админ и без подтверждения почты.
-    const admin = isAdminEmail(mail)
-
     const { rows } = await pool.query(
       `INSERT INTO users (email, password_hash, full_name, phone, client_type, company_name, inn,
                           role, email_verified_at)
@@ -87,13 +84,13 @@ authRouter.post('/register', async (req, res, next) => {
         type,
         companyName?.trim() || null,
         innDigits || null,
-        admin ? 'admin' : 'client',
-        admin ? new Date() : null,
+        'client',
+        null,
       ],
     )
 
     // Строгий режим: сессию не выдаём, пока почта не подтверждена.
-    if (REQUIRE_VERIFIED_EMAIL && !admin) {
+    if (REQUIRE_VERIFIED_EMAIL) {
       return res.status(201).json({ user: publicUser(rows[0]), needsEmailVerification: true })
     }
 
@@ -137,19 +134,6 @@ authRouter.post('/login', async (req, res, next) => {
 
     if (!user || !ok) {
       return res.status(401).json({ error: 'Неверный логин или пароль', field: 'password' })
-    }
-
-    // Если почту администратора зарегистрировали раньше, чем она попала
-    // в настройки, — достраиваем права при входе.
-    if (isAdminEmail(user.email) && (user.role !== 'admin' || user.email_verified_at === null)) {
-      const { rows: updated } = await pool.query(
-        `UPDATE users
-            SET role = 'admin', email_verified_at = coalesce(email_verified_at, now())
-          WHERE id = $1
-          RETURNING *`,
-        [user.id],
-      )
-      user = updated[0]
     }
 
     if (REQUIRE_VERIFIED_EMAIL && user.email_verified_at === null) {

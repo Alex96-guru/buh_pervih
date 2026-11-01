@@ -8,6 +8,7 @@ import { attachUser } from './middleware.mjs'
 import { authRouter } from './routes/auth.mjs'
 import { adminRouter } from './routes/admin.mjs'
 import { adminServicesRouter, servicesRouter } from './routes/services.mjs'
+import { ordersRouter } from './routes/orders.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const app = express()
@@ -46,6 +47,7 @@ app.get('/api/health', async (_req, res) => {
 })
 app.use('/api/auth', authRouter)
 app.use('/api/services', servicesRouter)
+app.use('/api/orders', ordersRouter)
 app.use('/api/admin/services', adminServicesRouter)
 app.use('/api/admin', adminRouter)
 
@@ -58,6 +60,9 @@ app.use(express.static(dist))
 app.get(/.*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')))
 
 app.use((err, _req, res, _next) => {
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Файл слишком большой. Максимум 50 МБ' })
+  }
   // Наружу — без подробностей: по тексту ошибки базы можно изучать схему.
   console.error('Необработанная ошибка:', err)
   res.status(500).json({ error: 'Что-то пошло не так' })

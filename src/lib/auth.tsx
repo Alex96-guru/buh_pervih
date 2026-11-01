@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import type { MouseEvent, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from './api'
 import type { ApiUser, ClientType } from './api'
@@ -54,7 +54,6 @@ type AuthContextValue = {
   loading: boolean
   signedIn: (user: AuthUser) => void
   signOut: () => Promise<void>
-  onOrderClick: (event: MouseEvent) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -107,17 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [navigate])
 
-  const onOrderClick = useCallback(
-    (event: MouseEvent) => {
-      if (user) return
-
-      event.preventDefault()
-      rememberReturnPath(window.location.pathname + window.location.hash)
-      navigate('/login')
-    },
-    [user, navigate],
-  )
-
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -126,9 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       signedIn,
       signOut,
-      onOrderClick,
     }),
-    [user, loading, signedIn, signOut, onOrderClick],
+    [user, loading, signedIn, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -138,4 +125,22 @@ export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth вызван вне AuthProvider')
   return ctx
+}
+
+/**
+ * Для страниц только для своих: неавторизованного ведёт на вход и после
+ * входа возвращает сюда же. Возвращает пользователя, пока его нет — null.
+ */
+export function useRequireUser(): AuthUser | null {
+  const navigate = useNavigate()
+  const { user, loading } = useAuth()
+
+  // Пока проверяем сессию, пользователь ещё null — выгонять рано.
+  useEffect(() => {
+    if (loading || user) return
+    rememberReturnPath(window.location.pathname + window.location.hash)
+    navigate('/login', { replace: true })
+  }, [loading, user, navigate])
+
+  return user
 }

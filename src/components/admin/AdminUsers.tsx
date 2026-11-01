@@ -53,7 +53,7 @@ export function AdminUsers() {
   }, [search])
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <p className="text-[17px] text-[var(--ink-2)]">
         {loading ? 'Загружаем…' : `Всего: ${total}`}
       </p>
@@ -77,7 +77,8 @@ export function AdminUsers() {
         </p>
       )}
 
-      <div className="w-full overflow-x-auto rounded-[20px] border border-[var(--line)] bg-white">
+      <p className="text-[13px] text-[var(--ink-2)] lg:hidden">Таблицу можно прокрутить в сторону.</p>
+      <div className="w-full max-w-full overflow-x-auto rounded-[20px] border border-[var(--line)] bg-white">
         <table className="w-full min-w-[840px] border-collapse text-left">
           <thead>
             <tr className="border-b border-[var(--line)]">

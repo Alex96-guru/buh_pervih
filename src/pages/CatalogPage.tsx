@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Info } from 'lucide-react'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { RevealDiv } from '../components/Reveal'
 import { ArrowBadge, PriceRow, ServiceCard } from '../components/ServiceCard'
 import type { ServiceCardData } from '../components/ServiceCard'
-import { useAuth } from '../lib/auth'
 import {
   buildCatalog,
   CARD_NEEDS_LIMIT,
@@ -18,6 +18,7 @@ import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
 import { DOCS_NOTE, ORDER_HREF } from '../lib/content'
 import { useServices } from '../lib/useServices'
+import { parseOrderCart, withOrderCart } from '../lib/orders'
 
 /**
  * Карточка каталога: первые документы из чек-листа и «и ещё N»,
@@ -62,7 +63,7 @@ function useActiveGroup(ids: string[]) {
   return active
 }
 
-function Subgroup({ subgroup }: { subgroup: CatalogSubgroup }) {
+function Subgroup({ subgroup, parentOrderId, cart }: { subgroup: CatalogSubgroup; parentOrderId: string | null; cart: string[] }) {
   // Десктоп: ряды по три карточки; неполный ряд не растягивается — как в макете.
   return (
     <div className="flex w-full flex-col gap-1 lg:gap-4">
@@ -77,7 +78,7 @@ function Subgroup({ subgroup }: { subgroup: CatalogSubgroup }) {
           <ServiceCard
             key={item.slug}
             card={toCard(item)}
-            href={serviceHref(item.slug)}
+            href={withOrderCart(serviceHref(item.slug), parentOrderId, cart)}
             delay={(i % 3) * 110}
           />
         ))}
@@ -88,7 +89,7 @@ function Subgroup({ subgroup }: { subgroup: CatalogSubgroup }) {
           <PriceRow
             key={item.slug}
             card={toCard(item)}
-            href={serviceHref(item.slug)}
+            href={withOrderCart(serviceHref(item.slug), parentOrderId, cart)}
             delay={Math.min(i, 4) * 70}
           />
         ))}
@@ -98,10 +99,15 @@ function Subgroup({ subgroup }: { subgroup: CatalogSubgroup }) {
 }
 
 export function CatalogPage() {
-  const { onOrderClick } = useAuth()
+  const [params] = useSearchParams()
+  const parentOrderId = params.get('from')
+  const cart = parseOrderCart(params.get('items'))
   const { services, loading, error } = useServices()
 
-  const catalog = useMemo(() => buildCatalog(services ?? []), [services])
+  const catalog = useMemo(
+    () => buildCatalog(parentOrderId ? (services ?? []).filter((service) => /\d/.test(service.price)) : (services ?? [])),
+    [services, parentOrderId],
+  )
   const groupIds = useMemo(() => catalog.map((g) => g.id), [catalog])
   const active = useActiveGroup(groupIds)
 
@@ -120,10 +126,10 @@ export function CatalogPage() {
         <section className="w-full bg-[var(--page-bg)] px-5 pt-10 pb-7 lg:px-[120px] lg:pt-14 lg:pb-10">
           <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-[14px] lg:gap-5">
             <h1 className="text-[32px] font-bold text-[var(--ink)] lg:text-[56px]">
-              {CATALOG_HERO.title}
+              {parentOrderId ? 'Дополнительные услуги' : CATALOG_HERO.title}
             </h1>
             <p className="text-[18px] leading-[27px] font-medium text-[var(--ink)] lg:max-w-[640px] lg:text-[20px] lg:leading-[31px]">
-              {CATALOG_HERO.lead}
+              {parentOrderId ? 'Выберите услугу с указанной ценой для докупки к вашему заказу.' : CATALOG_HERO.lead}
             </p>
           </div>
         </section>
@@ -172,7 +178,7 @@ export function CatalogPage() {
                   {group.title}
                 </h2>
                 {group.subgroups.map((subgroup) => (
-                  <Subgroup key={subgroup.title || group.id} subgroup={subgroup} />
+                  <Subgroup key={subgroup.title || group.id} subgroup={subgroup} parentOrderId={parentOrderId} cart={cart} />
                 ))}
               </div>
             ))}
@@ -180,7 +186,6 @@ export function CatalogPage() {
             <RevealDiv>
               <a
                 {...linkProps(ORDER_HREF)}
-                onClick={onOrderClick}
                 className="group flex w-full cursor-pointer flex-col gap-[10px] rounded-[20px] border border-[var(--line)] bg-white p-5 transition-[box-shadow,border-color] duration-300 hover:border-[var(--accent)] hover:shadow-[0_14px_38px_rgba(11,18,32,0.12)] lg:flex-row lg:items-center lg:justify-between lg:p-7"
               >
                 <div className="flex flex-col gap-[10px] lg:gap-[6px]">
