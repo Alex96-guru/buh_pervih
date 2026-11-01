@@ -14,23 +14,23 @@ export function Footer() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-6 lg:flex-row lg:gap-16">
-            {FOOTER.columns.map((column) => (
-              <div key={column.title} className="flex w-fit flex-col gap-3">
+          <div className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-5 lg:flex lg:gap-16">
+            {FOOTER.columns.map((column, index) => (
+              <div key={column.title} className={`flex min-w-0 flex-col gap-2 lg:gap-3 ${index === 2 ? 'col-span-2 lg:col-auto' : ''}`}>
                 <p className="text-[15px] font-bold text-[var(--ink)]">{column.title}</p>
                 {column.links.map((link) =>
                   link.href ? (
                     <a
                       key={link.label}
                       {...linkProps(link.href)}
-                      className="w-fit cursor-pointer text-[15px] font-medium text-[var(--ink-2)] transition-colors hover:text-[var(--accent)]"
+                      className="w-fit max-w-full break-words text-[14px] leading-5 font-medium text-[var(--ink-2)] transition-colors hover:text-[var(--accent)] lg:text-[15px]"
                     >
                       {link.label}
                     </a>
                   ) : (
                     <span
                       key={link.label}
-                      className="text-[15px] font-medium text-[var(--ink-2)]"
+                      className="text-[14px] leading-5 font-medium text-[var(--ink-2)] lg:text-[15px]"
                     >
                       {link.label}
                     </span>

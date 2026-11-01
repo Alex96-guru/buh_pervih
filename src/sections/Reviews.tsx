@@ -22,12 +22,12 @@ export function Reviews() {
           </a>
         </div>
 
-        <div className="flex w-full flex-col gap-[14px] lg:flex-row lg:items-start lg:gap-6">
+        <div aria-label="Отзывы клиентов" className="flex w-full snap-x snap-mandatory gap-[14px] overflow-x-auto overscroll-x-contain pb-2 lg:overflow-visible lg:pb-0 lg:items-start lg:gap-6">
           {REVIEWS.items.map((review, i) => (
             <RevealDiv
               key={i}
               delay={i * 120}
-              className="flex w-full flex-col gap-[10px] rounded-[12px] border border-[var(--line)] bg-white p-6 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[4px] hover:border-[var(--accent)] hover:shadow-[0_12px_32px_rgba(11,18,32,0.10)] lg:flex-1 lg:p-7"
+              className="flex w-[80%] max-w-[320px] shrink-0 snap-start flex-col gap-[10px] rounded-[12px] border border-[var(--line)] bg-white p-5 transition-[translate,box-shadow,border-color] duration-300 ease-out hover:-translate-y-[4px] hover:border-[var(--accent)] hover:shadow-[0_12px_32px_rgba(11,18,32,0.10)] lg:w-full lg:max-w-none lg:flex-1 lg:shrink lg:p-7"
             >
               <div className="flex w-full items-center justify-between">
                 <span className="text-[16px] font-bold text-[var(--ink)]">{review.name}</span>
