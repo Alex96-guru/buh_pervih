@@ -8,6 +8,7 @@ import {
   destroySession,
 } from '../auth/sessions.mjs'
 import { REQUIRE_VERIFIED_EMAIL } from '../auth/config.mjs'
+import { consumeAuthLimit, resetAuthLimit } from '../auth/rate-limit.mjs'
 
 export const authRouter = Router()
 
@@ -42,24 +43,38 @@ function badRequest(res, field, message) {
 
 authRouter.post('/register', async (req, res, next) => {
   try {
+    const retryAfter = await consumeAuthLimit('register-ip', req.ip, 5, 3600)
+    if (retryAfter) {
+      res.set('Retry-After', String(retryAfter))
+      return res.status(429).json({ error: 'Слишком много попыток. Повторите позже' })
+    }
     const { fullName, email, phone, password, clientType, companyName, inn } = req.body ?? {}
 
-    const name = String(fullName ?? '').trim()
-    if (name.length < 2) return badRequest(res, 'fullName', 'Укажите имя')
+    if (typeof fullName !== 'string' || typeof email !== 'string' ||
+        typeof phone !== 'string' || typeof password !== 'string' ||
+        typeof clientType !== 'string' ||
+        (companyName != null && typeof companyName !== 'string') ||
+        (inn != null && typeof inn !== 'string')) {
+      return res.status(400).json({ error: 'Некорректные данные регистрации' })
+    }
+    const name = fullName.trim()
+    if (name.length < 2 || name.length > 200) return badRequest(res, 'fullName', 'Укажите имя до 200 символов')
 
-    const mail = String(email ?? '').trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) {
+    const mail = email.trim().toLowerCase()
+    if (mail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) {
       return badRequest(res, 'email', 'Укажите адрес электронной почты')
     }
 
     const tel = normalizePhone(phone)
     if (!/^7\d{10}$/.test(tel)) return badRequest(res, 'phone', 'Номер неполный')
 
-    if (String(password ?? '').length < 8) {
-      return badRequest(res, 'password', 'Минимум 8 символов')
+    if (password.length < 8 || password.length > 256) {
+      return badRequest(res, 'password', 'Пароль должен содержать от 8 до 256 символов')
     }
 
-    const type = ['ip', 'ooo', 'person'].includes(clientType) ? clientType : 'ip'
+    if (!['ip', 'ooo', 'person'].includes(clientType)) return badRequest(res, 'clientType', 'Выберите тип клиента')
+    const type = clientType
+    if (companyName && companyName.length > 300) return badRequest(res, 'companyName', 'Название слишком длинное')
 
     const innDigits = digits(inn)
     if (type === 'ooo' && innDigits.length !== 10) {
@@ -116,13 +131,23 @@ authRouter.post('/register', async (req, res, next) => {
 authRouter.post('/login', async (req, res, next) => {
   try {
     const { login, password } = req.body ?? {}
-    const raw = String(login ?? '').trim()
-    if (!raw || !password) return badRequest(res, 'login', 'Введите телефон или почту и пароль')
+    if (typeof login !== 'string' || typeof password !== 'string' ||
+        !login.trim() || !password || login.length > 254 || password.length > 256) {
+      return badRequest(res, 'login', 'Введите телефон или почту и пароль')
+    }
+    const raw = login.trim()
 
     const byEmail = raw.includes('@')
+    const account = byEmail ? raw.toLowerCase() : normalizePhone(raw)
+    const ipRetry = await consumeAuthLimit('login-ip', req.ip, 30, 900)
+    const accountRetry = await consumeAuthLimit('login-account', account, 10, 900)
+    if (ipRetry || accountRetry) {
+      res.set('Retry-After', String(Math.max(ipRetry, accountRetry)))
+      return res.status(429).json({ error: 'Слишком много попыток входа. Повторите позже' })
+    }
     const { rows } = byEmail
-      ? await pool.query('SELECT * FROM users WHERE lower(email) = lower($1)', [raw])
-      : await pool.query('SELECT * FROM users WHERE phone = $1', [normalizePhone(raw)])
+      ? await pool.query('SELECT * FROM users WHERE lower(email) = $1', [account])
+      : await pool.query('SELECT * FROM users WHERE phone = $1', [account])
 
     let user = rows[0]
 
@@ -143,6 +168,8 @@ authRouter.post('/login', async (req, res, next) => {
         needsEmailVerification: true,
       })
     }
+
+    await resetAuthLimit('login-account', account)
 
     const { token } = await createSession(user.id, {
       userAgent: req.get('user-agent'),

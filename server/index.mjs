@@ -9,40 +9,27 @@ import { authRouter } from './routes/auth.mjs'
 import { adminRouter } from './routes/admin.mjs'
 import { adminServicesRouter, servicesRouter } from './routes/services.mjs'
 import { ordersRouter } from './routes/orders.mjs'
+import { protectApi, securityHeaders } from './security.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const app = express()
+app.disable('x-powered-by')
 
 // За прокси Railway — иначе req.ip покажет адрес прокси, а не клиента.
 app.set('trust proxy', 1)
 
+app.use(securityHeaders)
+app.use('/api', protectApi)
 app.use(express.json({ limit: '100kb' }))
 app.use(cookieParser())
 app.use(attachUser)
 
-/** Какой базе подключаемся — без адреса и пароля, только вид. */
-function dbHostKind() {
-  try {
-    const host = new URL(process.env.DATABASE_URL).hostname
-    if (host === 'localhost' || host === '127.0.0.1') return 'localhost'
-    if (host.endsWith('.railway.internal')) return 'railway-internal'
-    if (host.endsWith('.rlwy.net')) return 'railway-public'
-    return 'other'
-  } catch {
-    return 'invalid'
-  }
-}
-
-/**
- * Жив ли сервер и база. Наружу — только код ошибки (ECONNREFUSED, 42P01…),
- * без текста: по нему видно, что чинить, но не видно устройство базы.
- */
 app.get('/api/health', async (_req, res) => {
   try {
-    const { rows } = await pool.query('SELECT count(*)::int AS n FROM schema_migrations')
-    res.json({ ok: true, db: 'ok', migrations: rows[0].n, dbHost: dbHostKind() })
-  } catch (err) {
-    res.json({ ok: true, db: 'error', code: err.code ?? 'unknown', dbHost: dbHostKind() })
+    await pool.query('SELECT 1')
+    res.json({ ok: true })
+  } catch {
+    res.status(503).json({ ok: false })
   }
 })
 app.use('/api/auth', authRouter)
@@ -63,8 +50,12 @@ app.use((err, _req, res, _next) => {
   if (err.type === 'entity.too.large') {
     return res.status(413).json({ error: 'Файл слишком большой. Максимум 50 МБ' })
   }
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ error: 'Некорректный JSON' })
+  }
   // Наружу — без подробностей: по тексту ошибки базы можно изучать схему.
-  console.error('Необработанная ошибка:', err)
+  // Never log request bodies, cookies, SQL parameters or complete error objects.
+  console.error('Необработанная ошибка API:', err.code ?? err.name ?? 'unknown')
   res.status(500).json({ error: 'Что-то пошло не так' })
 })
 
@@ -74,7 +65,7 @@ app.use((err, _req, res, _next) => {
 try {
   await runMigrations()
 } catch (err) {
-  console.error('Миграции при старте не прошли:', err.code ?? '', err.message)
+  console.error('Миграции при старте не прошли:', err.code ?? err.cause?.code ?? 'unknown')
 }
 
 const port = Number(process.env.PORT) || 3000

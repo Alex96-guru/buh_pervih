@@ -1,0 +1,37 @@
+const appOrigin = process.env.APP_ORIGIN?.replace(/\/$/, '')
+
+if (process.env.NODE_ENV === 'production' && (!appOrigin || new URL(appOrigin).protocol !== 'https:')) {
+  throw new Error('В production требуется APP_ORIGIN с HTTPS-адресом сайта')
+}
+
+export function securityHeaders(_req, res, next) {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  })
+  if (process.env.NODE_ENV === 'production') {
+    res.set('Strict-Transport-Security', 'max-age=31536000')
+  }
+  next()
+}
+
+export function protectApi(req, res, next) {
+  res.set('Cache-Control', 'no-store')
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next()
+
+  const expected = appOrigin || `${req.protocol}://${req.get('host')}`
+  let source = req.get('origin')
+  if (!source) {
+    try {
+      source = new URL(req.get('referer')).origin
+    } catch {
+      source = null
+    }
+  }
+  if (source !== expected || req.get('sec-fetch-site') === 'cross-site') {
+    return res.status(403).json({ error: 'Запрос отклонён: неверный источник' })
+  }
+  next()
+}

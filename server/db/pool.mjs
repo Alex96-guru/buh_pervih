@@ -20,11 +20,22 @@ function sslFor(url) {
   if (host === 'localhost' || host === '127.0.0.1') return false
   if (host.endsWith('.railway.internal')) return false
 
-  return { rejectUnauthorized: false }
+  // Public database connections must authenticate the server certificate.
+  return {
+    rejectUnauthorized: true,
+    ...(process.env.DATABASE_CA_CERT ? { ca: process.env.DATABASE_CA_CERT.replace(/\\n/g, '\n') } : {}),
+  }
+}
+
+// pg gives SSL parameters in a URL precedence over the explicit `ssl` option.
+// Remove them so an accidental `sslmode=no-verify` cannot disable certificate checks.
+const safeDatabaseUrl = new URL(DATABASE_URL)
+for (const key of ['ssl', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert', 'uselibpqcompat']) {
+  safeDatabaseUrl.searchParams.delete(key)
 }
 
 export const pool = new pg.Pool({
-  connectionString: DATABASE_URL,
+  connectionString: safeDatabaseUrl.toString(),
   ssl: sslFor(DATABASE_URL),
   max: 10,
   idleTimeoutMillis: 30_000,
@@ -32,5 +43,5 @@ export const pool = new pg.Pool({
 })
 
 pool.on('error', (err) => {
-  console.error('Ошибка простаивающего соединения с Postgres:', err.message)
+  console.error('Ошибка простаивающего соединения с Postgres:', err.code ?? 'unknown')
 })

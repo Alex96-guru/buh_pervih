@@ -9,8 +9,8 @@ adminRouter.use(requireAdmin)
 /** Активные заказы с контактами покупателей для работы администратора. */
 adminRouter.get('/orders', async (req, res, next) => {
   try {
-    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100)
-    const offset = Math.max(Number(req.query.offset) || 0, 0)
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 100)
+    const offset = Math.min(Math.max(Number.parseInt(req.query.offset, 10) || 0, 0), 1_000_000)
     const { rows } = await pool.query(
       `SELECT o.id, o.number, o.parent_order_id, p.number AS parent_order_number,
               o.service_slug, o.service_title, o.items, o.amount, o.price, o.comment,
@@ -62,9 +62,9 @@ adminRouter.get('/orders', async (req, res, next) => {
  */
 adminRouter.get('/users', async (req, res, next) => {
   try {
-    const limit = Math.min(Number(req.query.limit) || 50, 200)
-    const offset = Math.max(Number(req.query.offset) || 0, 0)
-    const search = String(req.query.search ?? '').trim()
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 200)
+    const offset = Math.min(Math.max(Number.parseInt(req.query.offset, 10) || 0, 0), 1_000_000)
+    const search = String(req.query.search ?? '').trim().slice(0, 200)
 
     const where = search ? `WHERE u.full_name ILIKE $3 OR u.email ILIKE $3 OR u.phone LIKE $3` : ''
     const params = search ? [limit, offset, `%${search}%`] : [limit, offset]

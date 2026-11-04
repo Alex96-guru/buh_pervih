@@ -7,17 +7,6 @@ const DAY = 24 * HOUR
 /** Пока нет отправки писем, почта при регистрации не подтверждается. */
 export const REQUIRE_VERIFIED_EMAIL = false
 
-/**
- * Почта администратора. Кто зарегистрируется с ней — сразу админ,
- * и подтверждать почту не нужно. Можно переопределить переменной
- * ADMIN_EMAIL на сервере, не трогая код.
- */
-export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@gmail.com').trim().toLowerCase()
-
-export function isAdminEmail(email) {
-  return String(email ?? '').trim().toLowerCase() === ADMIN_EMAIL
-}
-
 /** Ссылка из письма с подтверждением почты. */
 export const EMAIL_VERIFY_TTL = 24 * HOUR
 

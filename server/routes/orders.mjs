@@ -2,6 +2,7 @@ import { Router } from 'express'
 import express from 'express'
 import { pool } from '../db/pool.mjs'
 import { requireAuth } from '../middleware.mjs'
+import { validatedMimeType } from '../files/validate.mjs'
 
 const METHODS = ['card', 'sbp']
 
@@ -273,21 +274,40 @@ ordersRouter.post('/:id/files', fileAccess,
       if (!name || name.length > 255 || /[\\/\x00-\x1f\x7f]/.test(name)) {
         return res.status(400).json({ error: 'Некорректное имя файла' })
       }
-      const mimeType = String(req.get('x-file-type') || 'application/octet-stream').slice(0, 200)
-      const { rows: counts } = await pool.query(
-        'SELECT count(*)::int AS count FROM order_files WHERE order_id = $1',
-        [req.fileOrder.id],
-      )
-      if (counts[0].count >= 30) {
-        return res.status(409).json({ error: 'К заказу можно приложить не больше 30 файлов' })
+      const mimeType = await validatedMimeType(name, req.body)
+      if (!mimeType) return res.status(415).json({ error: 'Тип файла не поддерживается или не соответствует содержимому' })
+
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN')
+        // The order lock serializes uploads and cancellation, so the 30-file limit cannot race.
+        const { rows: orders } = await client.query('SELECT status FROM orders WHERE id = $1 FOR UPDATE', [req.fileOrder.id])
+        if (!orders[0] || orders[0].status === 'cancelled') {
+          await client.query('ROLLBACK')
+          return res.status(409).json({ error: 'К отменённому заказу нельзя прикреплять файлы' })
+        }
+        const { rows: counts } = await client.query(
+          'SELECT count(*)::int AS count FROM order_files WHERE order_id = $1',
+          [req.fileOrder.id],
+        )
+        if (counts[0].count >= 30) {
+          await client.query('ROLLBACK')
+          return res.status(409).json({ error: 'К заказу можно приложить не больше 30 файлов' })
+        }
+        const { rows } = await client.query(
+          `INSERT INTO order_files (order_id, uploaded_by, name, mime_type, size_bytes, data)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id, name, mime_type, size_bytes, uploaded_by, created_at`,
+          [req.fileOrder.id, req.user.id, name, mimeType, req.body.length, req.body],
+        )
+        await client.query('COMMIT')
+        return res.status(201).json({ file: publicFile({ ...rows[0], full_name: req.user.full_name }) })
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {})
+        throw err
+      } finally {
+        client.release()
       }
-      const { rows } = await pool.query(
-        `INSERT INTO order_files (order_id, uploaded_by, name, mime_type, size_bytes, data)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, name, mime_type, size_bytes, uploaded_by, created_at`,
-        [req.fileOrder.id, req.user.id, name, mimeType, req.body.length, req.body],
-      )
-      return res.status(201).json({ file: publicFile({ ...rows[0], full_name: req.user.full_name }) })
     } catch (err) {
       return next(err)
     }
@@ -303,7 +323,7 @@ ordersRouter.get('/:id/files/:fileId', fileAccess, async (req, res, next) => {
     if (!rows[0]) return res.status(404).json({ error: 'Файл не найден' })
     res.set({
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(rows[0].name)}`,
+      'Content-Disposition': `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(rows[0].name).replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)}`,
       'Content-Length': String(rows[0].size_bytes),
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
