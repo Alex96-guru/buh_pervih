@@ -89,6 +89,7 @@ export type AdminOrder = {
   paidAt: string | null
   createdAt: string
   updatedAt: string
+  unreadCount: number
   customer: {
     fullName: string
     email: string | null

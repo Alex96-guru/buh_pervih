@@ -72,10 +72,10 @@ export function AdminOrders({ currentUserId }: { currentUserId: string }) {
         <div className="grid gap-5 lg:grid-cols-[minmax(280px,380px)_minmax(0,1fr)]">
           <div className={`${showMobileDetail ? 'hidden' : 'flex'} min-w-0 flex-col gap-2 lg:flex`}>
             {orders.map((order) => (
-              <button key={order.id} type="button" onClick={() => openOrder(order.id)} className={`group flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-[14px] border px-3 py-2.5 text-left lg:items-start lg:rounded-[16px] lg:p-4 ${selectedId === order.id ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--line)] bg-white hover:border-[var(--accent)]'}`}>
+              <button key={order.id} type="button" onClick={() => openOrder(order.id)} className={`group flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-[14px] border px-3 py-2.5 text-left lg:items-start lg:rounded-[16px] lg:p-4 ${selectedId === order.id ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : order.unreadCount > 0 || order.status === 'new' ? 'border-[#E7A33B] bg-[#FFF3DE] hover:border-[#C77D12]' : order.status === 'paid' || order.status === 'closed' ? 'border-[#7BC89C] bg-[#E8F7EE] hover:border-[#3B9F68]' : 'border-[var(--line)] bg-white hover:border-[var(--accent)]'}`}>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5 lg:gap-1">
                   <span className="flex min-w-0 items-center justify-between gap-2 text-[12px] font-semibold text-[var(--ink-2)] lg:text-[13px]">
-                    <span>№ {order.number} · {STATUS_LABELS[order.status]}</span>
+                    <span>№ {order.number} · {STATUS_LABELS[order.status]}{order.unreadCount > 0 && <span className="ml-1 text-[#A45C00]">· Новых: {order.unreadCount}</span>}</span>
                     <span className="hidden shrink-0 lg:inline">{formatDateTime(order.createdAt)}</span>
                   </span>
                   <span className="truncate text-[15px] font-semibold text-[var(--ink)] lg:text-[16px]">{order.serviceTitle}</span>

@@ -38,12 +38,16 @@ adminRouter.get('/orders', async (req, res, next) => {
       `SELECT o.id, o.number, o.parent_order_id, p.number AS parent_order_number,
               o.service_slug, o.service_title, o.items, o.amount, o.final_amount, o.price, o.comment,
               o.status, o.paid_at, o.created_at, o.updated_at, u.full_name, u.email, u.phone,
-              u.client_type, u.company_name, u.inn
+              u.client_type, u.company_name, u.inn,
+              (SELECT count(*)::int FROM order_messages unread
+                WHERE unread.order_id = o.id AND unread.sender_id <> $3
+                  AND unread.created_at > coalesce(reads.last_read_at, '-infinity'::timestamptz)) AS unread_count
          FROM orders o JOIN users u ON u.id = o.user_id
          LEFT JOIN orders p ON p.id = o.parent_order_id
+         LEFT JOIN order_message_reads reads ON reads.order_id = o.id AND reads.user_id = $3
         ORDER BY o.created_at DESC, o.id DESC
         LIMIT $1 OFFSET $2`,
-      [limit, offset],
+      [limit, offset, req.user.id],
     )
     const { rows: totals } = await pool.query(
       `SELECT count(*)::int AS total FROM orders`,
@@ -65,6 +69,7 @@ adminRouter.get('/orders', async (req, res, next) => {
         paidAt: o.paid_at,
         createdAt: o.created_at,
         updatedAt: o.updated_at,
+        unreadCount: o.unread_count,
         customer: {
           fullName: o.full_name,
           email: o.email,
