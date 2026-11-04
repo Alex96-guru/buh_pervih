@@ -180,4 +180,19 @@ export const api = {
 
   adminOrders: (offset = 0) =>
     request<{ total: number; orders: AdminOrder[] }>(`/api/admin/orders?limit=50&offset=${offset}`),
+
+  adminSetOrderStatus: (id: string, status: AdminOrder['status']) =>
+    request<{ order: Pick<AdminOrder, 'id' | 'status' | 'finalAmount' | 'updatedAt'> }>(`/api/admin/orders/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+
+  adminSetOrderAmount: (id: string, finalAmount: number | null) =>
+    request<{ order: Pick<AdminOrder, 'id' | 'status' | 'finalAmount' | 'updatedAt'> }>(`/api/admin/orders/${encodeURIComponent(id)}/amount`, {
+      method: 'PATCH',
+      body: JSON.stringify({ finalAmount }),
+    }),
+
+  adminIssueOrderInvoice: (id: string) =>
+    request<{ order: Pick<AdminOrder, 'id' | 'status' | 'finalAmount' | 'updatedAt'> }>(`/api/admin/orders/${encodeURIComponent(id)}/invoice`, { method: 'POST' }),
 }

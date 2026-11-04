@@ -137,7 +137,7 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
     api.order(parentOrderId)
       .then(({ order }) => {
         if (!active) return
-        if (order.status !== 'paid') setParentError('Исходный заказ ещё не оплачен')
+        if (!['paid', 'closed'].includes(order.status)) setParentError('Исходный заказ ещё не оплачен')
         else setParentOrder(order)
       })
       .catch(() => { if (active) setParentError('Исходный заказ не найден') })
@@ -307,14 +307,14 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
         <div className="w-full lg:sticky lg:top-[104px] lg:w-[380px] lg:shrink-0">
           <div className="flex w-full flex-col gap-[14px] rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-4 lg:p-7">
             <span className="flex items-center gap-2 text-[15px] font-semibold text-[var(--ink-2)]">
-              <ShoppingCart size={18} aria-hidden="true" />{amount ? 'К оплате' : 'Стоимость'}
+              <ShoppingCart size={18} aria-hidden="true" />{amount ? 'Предварительная стоимость' : 'Стоимость'}
             </span>
             <p className="-mt-2 text-[40px] font-extrabold tracking-[-1.2px] text-[var(--accent)] lg:text-[44px] lg:tracking-[-1.32px]">
               {amount ? formatRub(amount) : selectedSlugs.length === 1 ? selectedServices[0]?.price ?? '—' : '—'}
             </p>
 
             <SubmitButton disabled={submitting || !cartReady || selectedSlugs.length === 0 || selectedSlugs.length > 10 || Boolean(parentOrderId && (!parentOrder || !amount))}>
-              {submitting ? 'Оформляем и загружаем…' : amount ? 'Перейти к оплате' : 'Отправить заявку'}
+              {submitting ? 'Оформляем и загружаем…' : 'Оформить заказ'}
             </SubmitButton>
 
             {submitError && (
@@ -328,10 +328,10 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
               <Info size={20} className="mt-px shrink-0 text-[var(--accent)]" />
               <p className="flex-1 text-[15px] leading-[22px] font-medium text-[var(--ink)]">
                 {!amount
-                  ? 'Стоимость зависит от задачи. Специалист изучит её и назовёт сумму — оплатить можно будет в личном кабинете.'
+                  ? 'Стоимость зависит от задачи. Специалист изучит её, выполнит работу и выставит оплату в личном кабинете.'
                   : selectedServices.some((item) => isBasePrice(item.price))
-                    ? 'Это базовая стоимость. Если задача окажется сложнее, специалист согласует доплату до начала работы.'
-                    : 'После оформления вы сможете написать специалисту в переписке по заказу.'}
+                    ? 'Это предварительная стоимость. Итоговую сумму специалист укажет после выполнения работы.'
+                    : 'После оформления вы сможете написать специалисту. Оплата появится после выполнения работы.'}
               </p>
             </div>
           </div>

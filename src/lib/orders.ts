@@ -3,7 +3,7 @@
  * оплаченным, деньги не списываются.
  */
 
-export type OrderStatus = 'awaiting_price' | 'awaiting_payment' | 'paid' | 'cancelled'
+export type OrderStatus = 'new' | 'in_progress' | 'completed' | 'awaiting_payment' | 'paid' | 'closed' | 'cancelled'
 
 export type PaymentMethod = 'card' | 'sbp'
 
@@ -25,14 +25,17 @@ export type Order = {
   items: OrderItem[]
   /** Цена из каталога на момент заказа — текстом, как на сайте. */
   price: string
-  /** Сумма к оплате в рублях; null — цена «по запросу». */
+  /** Предварительная сумма из каталога; null — цена «по запросу». */
   amount: number | null
+  /** Итоговая сумма, утверждённая специалистом; null до её указания. */
+  finalAmount: number | null
   comment: string
   status: OrderStatus
   paymentMethod: PaymentMethod | null
   testPayment: boolean
   paidAt: string | null
   createdAt: string
+  updatedAt: string
 }
 
 export type RelatedOrder = {
@@ -79,11 +82,14 @@ export type AdminOrder = {
   serviceTitle: string
   items: OrderItem[]
   amount: number | null
+  finalAmount: number | null
   price: string
   comment: string
   status: OrderStatus
   paidAt: string | null
   createdAt: string
+  updatedAt: string
+  unreadCount: number
   customer: {
     fullName: string
     email: string | null
@@ -115,9 +121,12 @@ export function withOrderCart(path: string, parentOrderId: string | null, slugs:
 }
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
-  awaiting_price: 'Ждёт расчёта',
-  awaiting_payment: 'Ждёт оплаты',
-  paid: 'Оплачен',
+  new: 'Новая заявка',
+  in_progress: 'В работе',
+  completed: 'Работа выполнена',
+  awaiting_payment: 'Ожидает оплаты',
+  paid: 'Оплачено',
+  closed: 'Закрыт',
   cancelled: 'Отменён',
 }
 

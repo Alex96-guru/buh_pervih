@@ -16,7 +16,6 @@ import {
   STATUS_LABELS,
   formatDateTime,
   formatRub,
-  isBasePrice,
   orderPath,
   withParentOrder,
 } from '../lib/orders'
@@ -38,12 +37,12 @@ function useOrder(id: string, enabled: boolean) {
     if (!enabled) return
     let cancelled = false
 
-    api
-      .order(id)
+    const refresh = () => api.order(id)
       .then(({ order: next, relatedOrders: related }) => {
         if (!cancelled) {
           setOrder(next)
           setRelatedOrders(related)
+          setError('')
         }
       })
       .catch((err) => {
@@ -52,8 +51,12 @@ function useOrder(id: string, enabled: boolean) {
         else setError(err instanceof Error ? err.message : 'Не удалось загрузить заказ')
       })
 
+    void refresh()
+    const timer = window.setInterval(() => void refresh(), 10000)
+
     return () => {
       cancelled = true
+      window.clearInterval(timer)
     }
   }, [id, enabled])
 
@@ -108,9 +111,9 @@ function StatusBadge({ status }: { status: Order['status'] }) {
     <span
       className={cn(
         'inline-flex h-[30px] w-fit items-center rounded-full px-3 text-[14px] font-semibold',
-        status === 'paid' && 'bg-[#E3F5EA] text-[#1D7A45]',
+        (status === 'paid' || status === 'closed') && 'bg-[#E3F5EA] text-[#1D7A45]',
         status === 'cancelled' && 'bg-[var(--page-bg)] text-[var(--ink-2)]',
-        (status === 'awaiting_payment' || status === 'awaiting_price') &&
+        (status === 'new' || status === 'in_progress' || status === 'completed' || status === 'awaiting_payment') &&
           'bg-[var(--accent-soft)] text-[var(--accent)]',
       )}
     >
@@ -127,6 +130,8 @@ function OrderContent({ order, onChange, relatedOrders, currentUserId, isAdmin }
         <h1 className="text-[32px] leading-[38px] font-bold text-[var(--ink)] lg:text-[44px] lg:leading-[52px]">
           {order.status === 'paid'
             ? 'Оплата прошла'
+            : order.status === 'closed'
+              ? 'Заказ завершён'
             : order.status === 'awaiting_payment'
               ? 'Оплата заказа'
               : `Заказ № ${order.number}`}
@@ -137,13 +142,17 @@ function OrderContent({ order, onChange, relatedOrders, currentUserId, isAdmin }
         <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
           <div className="flex flex-col gap-1">
             <span className="text-[14px] font-semibold text-[var(--ink-2)]">
-              Заказ № {order.number} · {formatDateTime(order.createdAt)}
+              Заказ № {order.number} · создан {formatDateTime(order.createdAt)}
             </span>
             <span className="text-[18px] leading-[26px] font-semibold text-[var(--ink)]">{order.serviceTitle}</span>
+            <span className="text-[13px] text-[var(--ink-2)]">Обновлён {formatDateTime(order.updatedAt)}</span>
           </div>
-          <span className="text-[28px] font-extrabold tracking-[-0.6px] whitespace-nowrap text-[var(--ink)]">
-            {order.amount ? formatRub(order.amount) : order.price}
-          </span>
+          <div className="flex flex-col lg:items-end">
+            <span className="text-[13px] text-[var(--ink-2)]">{order.finalAmount ? 'Итоговая стоимость' : 'Предварительная стоимость'}</span>
+            <span className="text-[28px] font-extrabold tracking-[-0.6px] whitespace-nowrap text-[var(--ink)]">
+              {order.finalAmount ? formatRub(order.finalAmount) : order.amount ? formatRub(order.amount) : order.price}
+            </span>
+          </div>
         </div>
         {order.items.length > 1 && (
           <div className="flex flex-col gap-2 border-t border-[var(--line)] pt-4">
@@ -178,8 +187,8 @@ function OrderContent({ order, onChange, relatedOrders, currentUserId, isAdmin }
       )}
 
       {order.status === 'awaiting_payment' && <PaymentForm order={order} onChange={onChange} />}
-      {order.status === 'paid' && <PaidState order={order} />}
-      {order.status === 'paid' && (
+      {(order.status === 'paid' || order.status === 'closed') && <PaidState order={order} />}
+      {(order.status === 'paid' || order.status === 'closed') && (
         <Button href={withParentOrder(CATALOG_PATH, order.parentOrderId ?? order.id)} className="w-full lg:w-fit">
           Добавить услугу
         </Button>
@@ -189,12 +198,13 @@ function OrderContent({ order, onChange, relatedOrders, currentUserId, isAdmin }
       ) : (
         <OrderConversation orderId={order.id} currentUserId={currentUserId} isAdmin={isAdmin} />
       )}
-      {order.status === 'awaiting_price' && (
+      {order.status === 'new' && (
         <StateNote icon={Clock} tone="accent">
-          Заявка принята. Специалист изучит задачу, назовёт сумму и свяжется с вами в течение
-          рабочего дня. Оплатить заказ можно будет здесь же.
+          Заявка принята. Специалист изучит задачу и свяжется с вами в переписке.
         </StateNote>
       )}
+      {order.status === 'in_progress' && <StateNote icon={Clock} tone="accent">Специалист выполняет вашу задачу. Если понадобятся документы, он напишет в переписке.</StateNote>}
+      {order.status === 'completed' && <StateNote icon={CircleCheck} tone="accent">Работа выполнена. Специалист укажет итоговую стоимость и выставит оплату здесь.</StateNote>}
       {order.status === 'cancelled' && (
         <>
           <StateNote icon={CircleX} tone="muted">
@@ -206,7 +216,7 @@ function OrderContent({ order, onChange, relatedOrders, currentUserId, isAdmin }
         </>
       )}
 
-      {order.status === 'awaiting_price' && <CancelLink order={order} onChange={onChange} />}
+      {order.status === 'new' && <CancelLink order={order} onChange={onChange} />}
     </div>
   )
 }
@@ -303,20 +313,14 @@ function PaymentForm({ order, onChange }: { order: Order; onChange: (order: Orde
 
       <div className="flex w-full flex-col gap-3">
         <SubmitButton type="button" onClick={pay} disabled={paying}>
-          {paying ? 'Оплачиваем…' : `Оплатить ${order.amount ? formatRub(order.amount) : ''}`}
+          {paying ? 'Оплачиваем…' : `Оплатить ${order.finalAmount ? formatRub(order.finalAmount) : ''}`}
         </SubmitButton>
         {payError && (
           <p role="alert" className="text-[14px] font-medium text-[var(--danger)]">
             {payError}
           </p>
         )}
-        {isBasePrice(order.price) && (
-          <p className="text-[14px] leading-[20px] text-[var(--ink-2)]">
-            Это базовая стоимость. Если задача окажется сложнее, специалист согласует доплату до
-            начала работы.
-          </p>
-        )}
-        <CancelLink order={order} onChange={onChange} />
+        <p className="text-[14px] leading-[20px] text-[var(--ink-2)]">Итоговая стоимость выставлена после выполнения работы.</p>
       </div>
     </>
   )
@@ -336,13 +340,7 @@ function PaidState({ order }: { order: Order }) {
         </p>
       </div>
 
-      <Panel title="Что дальше">
-        <ol className="flex w-full list-decimal flex-col gap-2 pl-5 text-[16px] leading-[24px] text-[var(--ink)]">
-          <li>Специалист свяжется с вами в течение рабочего дня.</li>
-          <li>Пришлёт список документов и подскажет, где их взять.</li>
-          <li>Сделает работу и пришлёт результат — статус виден в личном кабинете.</li>
-        </ol>
-      </Panel>
+      <StateNote icon={CircleCheck} tone="accent">{order.status === 'closed' ? 'Заказ полностью завершён. Переписка и документы остаются доступны.' : 'Оплата отмечена. Специалист закроет заказ после завершения всех действий.'}</StateNote>
 
       <div className="flex w-full flex-col gap-3 lg:flex-row">
         <Button href={CABINET_PATH} className="w-full lg:w-fit">
