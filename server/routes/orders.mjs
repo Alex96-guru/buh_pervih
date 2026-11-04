@@ -18,12 +18,14 @@ function publicOrder(row) {
     items: row.items?.length ? row.items : [{ serviceSlug: row.service_slug, serviceTitle: row.service_title, price: row.price, amount: row.amount }],
     price: row.price,
     amount: row.amount,
+    finalAmount: row.final_amount,
     comment: row.comment,
     status: row.status,
     paymentMethod: row.payment_method,
     testPayment: row.payment_provider === 'test',
     paidAt: row.paid_at,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
@@ -147,14 +149,14 @@ ordersRouter.post('/', async (req, res, next) => {
     let parentNumber = null
     if (parentOrderId !== undefined && parentOrderId !== null) {
       const parent = await findOwnOrder(parentOrderId, req.user.id)
-      if (!parent || parent.status !== 'paid') return notFound(res)
+      if (!parent || !['paid', 'closed'].includes(parent.status)) return notFound(res)
       if (!amount) {
         return res.status(400).json({ error: 'Дополнительная услуга должна иметь указанную цену' })
       }
       const root = parent.parent_order_id
         ? await findOwnOrder(parent.parent_order_id, req.user.id)
         : parent
-      if (!root || root.status !== 'paid') return notFound(res)
+      if (!root || !['paid', 'closed'].includes(root.status)) return notFound(res)
       parentId = root.id
       parentNumber = root.number
     }
@@ -171,7 +173,7 @@ ordersRouter.post('/', async (req, res, next) => {
         items.length === 1 ? service.price : `${amount.toLocaleString('ru-RU')} ₽`,
         amount,
         comment,
-        amount ? 'awaiting_payment' : 'awaiting_price',
+        'new',
         parentId,
         JSON.stringify(items),
       ],
@@ -448,7 +450,7 @@ ordersRouter.post('/:id/pay', async (req, res, next) => {
     const { rows } = await pool.query(
       `UPDATE orders
           SET status = 'paid', payment_method = $2, payment_provider = 'test', paid_at = now()
-        WHERE id = $1 AND status = 'awaiting_payment'
+        WHERE id = $1 AND status = 'awaiting_payment' AND final_amount > 0
         RETURNING *`,
       [order.id, method],
     )
@@ -470,11 +472,11 @@ ordersRouter.post('/:id/cancel', async (req, res, next) => {
 
     const { rows } = await pool.query(
       `UPDATE orders SET status = 'cancelled'
-        WHERE id = $1 AND status IN ('awaiting_price', 'awaiting_payment')
+        WHERE id = $1 AND status = 'new'
         RETURNING *`,
       [order.id],
     )
-    if (!rows[0]) return res.status(409).json({ error: 'Оплаченный заказ отменяет специалист' })
+    if (!rows[0]) return res.status(409).json({ error: 'После начала работы отмену согласует специалист' })
 
     const parent = rows[0].parent_order_id
       ? await findOwnOrder(rows[0].parent_order_id, req.user.id)

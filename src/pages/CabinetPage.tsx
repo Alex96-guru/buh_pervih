@@ -28,7 +28,7 @@ function OrderRow({ order }: { order: Order }) {
             {order.serviceTitle}
           </span>
           <span className="text-[14px] text-[var(--ink-2)]">
-            № {order.number} · {order.amount ? formatRub(order.amount) : order.price} ·{' '}
+            № {order.number} · {order.finalAmount ? formatRub(order.finalAmount) : order.amount ? `Предварительно ${formatRub(order.amount)}` : order.price} ·{' '}
             <span
               className={cn(
                 order.status === 'awaiting_payment' && 'font-semibold text-[var(--accent)]',
@@ -54,16 +54,18 @@ function MyOrders() {
 
   useEffect(() => {
     let cancelled = false
-    api
-      .orders()
+    const refresh = () => api.orders()
       .then(({ orders: list }) => {
-        if (!cancelled) setOrders(list)
+        if (!cancelled) { setOrders(list); setError('') }
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Не удалось загрузить')
       })
+    void refresh()
+    const timer = window.setInterval(() => void refresh(), 10000)
     return () => {
       cancelled = true
+      window.clearInterval(timer)
     }
   }, [])
 
@@ -84,7 +86,7 @@ function MyOrders() {
         <a href={CATALOG_PATH} className="font-semibold text-[var(--accent)] hover:underline">
           Выберите услугу
         </a>{' '}
-        — она появится здесь со статусом оплаты.
+        — она появится здесь с этапом выполнения.
       </p>
     )
   }

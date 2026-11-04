@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test:security": "node --test tests/security.test.mjs",
+    "test:orders": "node --test tests/order-status.test.mjs",
     "preview": "vite preview",
     "start": "node server/index.mjs",
     "dev:api": "node --watch server/index.mjs",
