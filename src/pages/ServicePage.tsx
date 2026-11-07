@@ -11,28 +11,29 @@ import { linkProps } from '../lib/links'
 import { DOCS_NOTE } from '../lib/content'
 import { checkoutPath, parseOrderCart, withOrderCart } from '../lib/orders'
 import { useService } from '../lib/useServices'
+import { InstructionPurchase } from '../components/InstructionPurchase'
 
 /**
  * Цена, «Заказать» и подсказка про документы. На десктопе — правая колонка.
  * Неавторизованного оформление само отправит на вход и вернёт обратно.
  */
-function Summary({ slug, price, parentOrderId, cart }: { slug: string; price: string; parentOrderId: string | null; cart: string[] }) {
+function Summary({ slug, price, parentOrderId, cart, instruction }: { slug: string; price: string; parentOrderId: string | null; cart: string[]; instruction?: boolean }) {
   return (
     <div className="flex w-full flex-col gap-[14px] rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-4 lg:p-7">
       <p className="text-[40px] font-extrabold tracking-[-1.2px] text-[var(--accent)] lg:text-[44px] lg:tracking-[-1.32px]">
         {price}
       </p>
-      {(!parentOrderId || /\d/.test(price)) ? (
+      {instruction ? <Button href="#buy-instruction" className="w-full">Купить инструкцию</Button> : (!parentOrderId || /\d/.test(price)) ? (
         <Button href={withOrderCart(checkoutPath(slug), parentOrderId, cart.filter((item) => item !== slug))} className="w-full">
           {parentOrderId ? 'Добавить к заказу' : 'Заказать'}
         </Button>
       ) : <p className="text-[14px] text-[var(--ink-2)]">Для докупки выберите услугу с указанной ценой.</p>}
-      <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
+      {!instruction && <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
         <Info size={20} className="mt-px shrink-0 text-[var(--accent)]" />
         <p className="flex-1 text-[15px] leading-[22px] font-medium text-[var(--ink)]">
           {DOCS_NOTE}
         </p>
-      </div>
+      </div>}
     </div>
   )
 }
@@ -157,18 +158,19 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
 
       {/* Мобайл: цена и кнопка сразу под заголовком */}
       <div className="lg:hidden">
-        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
+        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} instruction={service.kind === 'instruction'} />
       </div>
 
       <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-start lg:gap-20 lg:pt-2">
         <div className="flex w-full flex-col gap-5 lg:flex-1 lg:gap-9">
-          {audience && (
+          {service.kind === 'instruction' && <TextBlock title="Об инструкции" large>{service.description}</TextBlock>}
+          {service.kind === 'service' && audience && (
             <TextBlock title="Кому и когда" large>
               {audience}
             </TextBlock>
           )}
 
-          {needs.length > 0 && (
+          {service.kind === 'service' && needs.length > 0 && (
             <div className="flex w-full flex-col gap-3 rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-[14px] lg:p-7">
               <h2 className="text-[20px] font-bold text-[var(--ink)]">Что понадобится</h2>
               <ul className="flex w-full flex-col gap-3">
@@ -179,12 +181,13 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
             </div>
           )}
 
-          {result && <TextBlock title="Что получите">{result}</TextBlock>}
+          {service.kind === 'service' && result && <TextBlock title="Что получите">{result}</TextBlock>}
+          {service.kind === 'instruction' && <InstructionPurchase service={service} />}
         </div>
 
         {/* Десктоп: сводка справа и едет вместе с прокруткой */}
         <div className="hidden w-[380px] shrink-0 lg:sticky lg:top-[104px] lg:block">
-          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
+          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} instruction={service.kind === 'instruction'} />
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.mjs'
 import { adminRouter } from './routes/admin.mjs'
 import { adminServicesRouter, servicesRouter } from './routes/services.mjs'
 import { ordersRouter } from './routes/orders.mjs'
+import { instructionPurchasesRouter } from './routes/instruction-purchases.mjs'
 import { protectApi, securityHeaders } from './security.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -35,6 +36,7 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRouter)
 app.use('/api/services', servicesRouter)
 app.use('/api/orders', ordersRouter)
+app.use('/api/instruction-purchases', instructionPurchasesRouter)
 app.use('/api/admin/services', adminServicesRouter)
 app.use('/api/admin', adminRouter)
 
@@ -48,7 +50,8 @@ app.get(/.*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')))
 
 app.use((err, _req, res, _next) => {
   if (err.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'Файл слишком большой. Максимум 50 МБ' })
+    const limit = _req.path === '/api/admin/services/instruction-files' ? 20 : 50
+    return res.status(413).json({ error: `Файл слишком большой. Максимум ${limit} МБ` })
   }
   if (err instanceof SyntaxError && 'body' in err) {
     return res.status(400).json({ error: 'Некорректный JSON' })

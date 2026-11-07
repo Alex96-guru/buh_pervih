@@ -1,8 +1,20 @@
 import { Router } from 'express'
 import { pool } from '../db/pool.mjs'
 import { requireAdmin } from '../middleware.mjs'
+import express from 'express'
+import { fileTypeFromBuffer } from 'file-type'
 
 const GROUPS = ['ip', 'person']
+const MANAGER_EMAIL = process.env.INSTRUCTION_MANAGER_EMAIL?.trim().toLowerCase()
+
+function canManageInstructions(user) {
+  return Boolean(MANAGER_EMAIL && user?.role === 'admin' && user.email?.toLowerCase() === MANAGER_EMAIL)
+}
+
+function requireInstructionManager(req, res, next) {
+  if (!canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
+  next()
+}
 
 /** Наружу — в camelCase и без служебных полей базы. */
 function publicService(row) {
@@ -16,6 +28,11 @@ function publicService(row) {
     audience: row.audience,
     needs: row.needs,
     result: row.result,
+    kind: row.kind,
+    description: row.description,
+    priceAmount: row.price_amount,
+    published: row.is_published,
+    hasFile: Boolean(row.instruction_file_id),
   }
 }
 
@@ -58,6 +75,23 @@ function text(value, max) {
  * либо { field, message } для ответа 400.
  */
 function parseService(body) {
+  const kind = body?.kind ?? 'service'
+  if (kind === 'instruction') {
+    const title = text(body?.title, 300)
+    const description = text(body?.description, 2000)
+    const amount = body?.priceAmount
+    if (title.length < 3) return { field: 'title', message: 'Укажите название' }
+    if (!description) return { field: 'description', message: 'Укажите описание' }
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1_000_000) return { field: 'priceAmount', message: 'Укажите цену от 1 до 1 000 000 ₽' }
+    if (body?.published !== true && body?.published !== false) return { field: 'published', message: 'Укажите видимость в каталоге' }
+    return { data: {
+      kind, group: 'instructions', subgroup: '', title,
+      price: `${amount.toLocaleString('ru-RU')} ₽`, priceAmount: amount,
+      description, published: body.published, fileId: body.fileId ?? null,
+      audience: '', needs: [], result: '',
+    } }
+  }
+  if (kind !== 'service') return { field: 'kind', message: 'Неизвестный тип позиции' }
   const group = String(body?.group ?? '')
   if (!GROUPS.includes(group)) return { field: 'group', message: 'Выберите раздел' }
 
@@ -93,6 +127,7 @@ function parseService(body) {
       audience: text(body?.audience, 2000),
       needs,
       result: text(body?.result, 4000),
+      kind: 'service', description: '', priceAmount: null, published: true, fileId: null,
     },
   }
 }
@@ -124,7 +159,7 @@ export const servicesRouter = Router()
 
 servicesRouter.get('/', async (_req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM services ORDER BY group_id, position, created_at')
+    const { rows } = await pool.query('SELECT * FROM services WHERE is_published = true ORDER BY group_id, position, created_at')
     return res.json({ services: rows.map(publicService) })
   } catch (err) {
     return next(err)
@@ -133,7 +168,7 @@ servicesRouter.get('/', async (_req, res, next) => {
 
 servicesRouter.get('/:slug', async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM services WHERE slug = $1', [req.params.slug])
+    const { rows } = await pool.query('SELECT * FROM services WHERE slug = $1 AND is_published = true', [req.params.slug])
     if (!rows[0]) return res.status(404).json({ error: 'Услуга не найдена' })
     return res.json({ service: publicService(rows[0]) })
   } catch (err) {
@@ -146,20 +181,68 @@ export const adminServicesRouter = Router()
 
 adminServicesRouter.use(requireAdmin)
 
+adminServicesRouter.get('/', async (_req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM services ORDER BY group_id, position, created_at')
+    return res.json({ services: rows.map(publicService) })
+  } catch (err) { return next(err) }
+})
+
+adminServicesRouter.post('/instruction-files', requireInstructionManager,
+  express.raw({ type: 'application/octet-stream', limit: '20mb' }),
+  async (req, res, next) => {
+    try {
+      if (!Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ error: 'Выберите файл Word' })
+      let name
+      try { name = decodeURIComponent(String(req.get('x-file-name') ?? '')) }
+      catch { return res.status(400).json({ error: 'Некорректное имя файла' }) }
+      if (!name.toLowerCase().endsWith('.docx') || name.length > 255 || /[\\/\x00-\x1f\x7f]/.test(name)) {
+        return res.status(400).json({ error: 'Нужен файл .docx с корректным именем' })
+      }
+      const detected = await fileTypeFromBuffer(req.body)
+      if (detected?.mime !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        return res.status(415).json({ error: 'Содержимое файла не соответствует формату Word .docx' })
+      }
+      const { rows } = await pool.query(
+        'INSERT INTO instruction_files (name, size_bytes, data, uploaded_by) VALUES ($1, $2, $3, $4) RETURNING id',
+        [name, req.body.length, req.body, req.user.id],
+      )
+      return res.status(201).json({ fileId: rows[0].id })
+    } catch (err) { return next(err) }
+  },
+)
+
+async function validInstructionFile(fileId, userId) {
+  if (typeof fileId !== 'string') return false
+  try {
+    const { rows } = await pool.query('SELECT id FROM instruction_files WHERE id = $1 AND uploaded_by = $2', [fileId, userId])
+    return Boolean(rows[0])
+  } catch (err) {
+    if (err.code === '22P02') return false
+    throw err
+  }
+}
+
 adminServicesRouter.post('/', async (req, res, next) => {
   try {
     const parsed = parseService(req.body)
     if (!parsed.data) return badRequest(res, parsed.field, parsed.message)
     const s = parsed.data
+    if (s.kind === 'instruction') {
+      if (!canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
+      if (!(await validInstructionFile(s.fileId, req.user.id))) return badRequest(res, 'fileId', 'Загрузите файл Word')
+    }
 
     const slug = await uniqueSlug(slugify(s.title))
     const position = await slotAtEnd(s.group, s.subgroup)
 
     const { rows } = await pool.query(
-      `INSERT INTO services (slug, group_id, subgroup, title, price, audience, needs, result, position)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO services (slug, group_id, subgroup, title, price, audience, needs, result, position,
+                             kind, description, price_amount, is_published, instruction_file_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
-      [slug, s.group, s.subgroup, s.title, s.price, s.audience, JSON.stringify(s.needs), s.result, position],
+      [slug, s.group, s.subgroup, s.title, s.price, s.audience, JSON.stringify(s.needs), s.result, position,
+        s.kind, s.description, s.priceAmount, s.published, s.fileId],
     )
 
     return res.status(201).json({ service: publicService(rows[0]) })
@@ -175,10 +258,16 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
     const s = parsed.data
 
     const { rows: current } = await pool.query(
-      'SELECT group_id, subgroup, position FROM services WHERE id = $1',
+      'SELECT group_id, subgroup, position, kind, instruction_file_id FROM services WHERE id = $1',
       [req.params.id],
     )
     if (!current[0]) return res.status(404).json({ error: 'Услуга не найдена' })
+    if (current[0].kind !== s.kind) return res.status(409).json({ error: 'Тип позиции нельзя изменить после создания' })
+    if (s.kind === 'instruction') {
+      if (!canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
+      if (s.fileId && !(await validInstructionFile(s.fileId, req.user.id))) return badRequest(res, 'fileId', 'Файл не найден')
+      if (!s.fileId && !current[0].instruction_file_id) return badRequest(res, 'fileId', 'Загрузите файл Word')
+    }
 
     // Адрес (slug) при правке не меняется. Место — только если услуга переехала.
     const moved = current[0].group_id !== s.group || current[0].subgroup !== s.subgroup
@@ -187,7 +276,9 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
     const { rows } = await pool.query(
       `UPDATE services
           SET group_id = $2, subgroup = $3, title = $4, price = $5,
-              audience = $6, needs = $7, result = $8, position = $9
+          audience = $6, needs = $7, result = $8, position = $9,
+          description = $10, price_amount = $11, is_published = $12,
+          instruction_file_id = coalesce($13, instruction_file_id)
         WHERE id = $1
         RETURNING *`,
       [
@@ -200,6 +291,10 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
         JSON.stringify(s.needs),
         s.result,
         position,
+        s.description,
+        s.priceAmount,
+        s.published,
+        s.fileId,
       ],
     )
 
@@ -213,6 +308,9 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
 
 adminServicesRouter.delete('/:id', async (req, res, next) => {
   try {
+    const { rows } = await pool.query('SELECT kind FROM services WHERE id = $1', [req.params.id])
+    if (!rows[0]) return res.status(404).json({ error: 'Услуга не найдена' })
+    if (rows[0].kind === 'instruction' && !canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
     const { rowCount } = await pool.query('DELETE FROM services WHERE id = $1', [req.params.id])
     if (rowCount === 0) return res.status(404).json({ error: 'Услуга не найдена' })
     return res.status(204).end()

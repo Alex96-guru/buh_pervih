@@ -4,7 +4,7 @@ import type { AdminOrder, Order, OrderDialog, OrderFile, OrderMessage, PaymentMe
 export type ClientType = 'ip' | 'ooo' | 'person'
 
 /** Всё, что админ заполняет в форме услуги; адрес сервер придумает сам. */
-export type ServicePayload = Omit<Service, 'id' | 'slug'>
+export type ServicePayload = Omit<Service, 'id' | 'slug' | 'hasFile'> & { fileId?: string | null }
 
 export type ApiUser = {
   id: string
@@ -13,6 +13,7 @@ export type ApiUser = {
   phone: string
   clientType: ClientType
   role: 'client' | 'admin'
+  instructionManager: boolean
   emailVerified: boolean
 }
 
@@ -173,6 +174,18 @@ export const api = {
   adminDeleteService: (id: string) =>
     request<void>(`/api/admin/services/${id}`, { method: 'DELETE' }),
 
+  adminServices: () => request<{ services: Service[] }>('/api/admin/services'),
+
+  instructionPaymentConfig: () => request<{ testPaymentsEnabled: boolean }>('/api/instruction-purchases/config'),
+  createInstructionPurchase: (slug: string, email: string) => request<{ purchase: InstructionPurchase; accessToken: string }>('/api/instruction-purchases', {
+    method: 'POST', body: JSON.stringify({ slug, email }),
+  }),
+  instructionPurchase: (token: string) => request<{ purchase: InstructionPurchase; testPaymentsEnabled: boolean }>(`/api/instruction-purchases/${encodeURIComponent(token)}`),
+  testPayInstruction: (token: string, method: PaymentMethod) => request<{ purchase: InstructionPurchase; download: InstructionDownload }>(`/api/instruction-purchases/${encodeURIComponent(token)}/test-pay`, {
+    method: 'POST', body: JSON.stringify({ method }),
+  }),
+  instructionDownloadLink: (token: string) => request<{ download: InstructionDownload }>(`/api/instruction-purchases/${encodeURIComponent(token)}/download-link`, { method: 'POST' }),
+
   adminUsers: (search = '') =>
     request<{ total: number; users: AdminUser[] }>(
       `/api/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`,
@@ -195,4 +208,18 @@ export const api = {
 
   adminIssueOrderInvoice: (id: string) =>
     request<{ order: Pick<AdminOrder, 'id' | 'status' | 'finalAmount' | 'updatedAt'> }>(`/api/admin/orders/${encodeURIComponent(id)}/invoice`, { method: 'POST' }),
+}
+
+export type InstructionPurchase = { id: string; title: string; amount: number; status: 'pending' | 'paid'; paidAt: string | null; accessExpiresAt: string }
+export type InstructionDownload = { url: string; expiresAt: string }
+
+export async function uploadInstructionFile(file: File): Promise<string> {
+  const response = await fetch('/api/admin/services/instruction-files', {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/octet-stream', 'X-File-Name': encodeURIComponent(file.name) },
+    body: file,
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok) throw new ApiError(data?.error ?? 'Не удалось загрузить файл', response.status)
+  return data.fileId as string
 }

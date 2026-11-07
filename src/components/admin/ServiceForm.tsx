@@ -2,13 +2,14 @@ import { useId, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 import { Field, Segmented, SubmitButton, TextArea } from '../auth/fields'
-import { api, ApiError } from '../../lib/api'
+import { api, ApiError, uploadInstructionFile } from '../../lib/api'
 import type { ServicePayload } from '../../lib/api'
 import { GROUPS } from '../../lib/catalog'
 import type { CatalogNeed, GroupId, Service } from '../../lib/catalog'
 import { cn } from '../../lib/cn'
 
 const EMPTY: ServicePayload = {
+  kind: 'service',
   group: 'ip',
   subgroup: '',
   title: '',
@@ -16,6 +17,7 @@ const EMPTY: ServicePayload = {
   audience: '',
   needs: [],
   result: '',
+  description: '', priceAmount: null, published: true, fileId: null,
 }
 
 function IconButton({
@@ -121,11 +123,13 @@ function NeedEditor({
  */
 export function ServiceForm({
   service,
+  canManageInstructions,
   subgroups,
   onSaved,
   onCancel,
 }: {
   service?: Service
+  canManageInstructions: boolean
   subgroups: Record<GroupId, string[]>
   onSaved: (service: Service) => void
   onCancel: () => void
@@ -140,12 +144,17 @@ export function ServiceForm({
           audience: service.audience,
           needs: service.needs,
           result: service.result,
+          kind: service.kind, description: service.description,
+          priceAmount: service.priceAmount, published: service.published,
+          fileId: null,
         }
       : EMPTY,
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
   const listId = useId()
 
   const set = <K extends keyof ServicePayload>(key: K, value: ServicePayload[K]) => {
@@ -171,16 +180,26 @@ export function ServiceForm({
 
     const nextErrors: Record<string, string> = {}
     if (form.title.trim().length < 3) nextErrors.title = 'Укажите название'
-    if (!form.price.trim()) nextErrors.price = 'Укажите цену'
+    if (form.kind === 'instruction') {
+      if (!form.description.trim()) nextErrors.description = 'Укажите описание'
+      if (!Number.isSafeInteger(form.priceAmount) || (form.priceAmount ?? 0) < 1) nextErrors.priceAmount = 'Укажите цену'
+      if (!service?.hasFile && !file && !uploadedFileId) nextErrors.file = 'Загрузите файл .docx'
+    } else if (!form.price.trim()) nextErrors.price = 'Укажите цену'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
 
     setSaving(true)
     setFormError('')
     try {
+      let fileId = uploadedFileId
+      if (form.kind === 'instruction' && file && !fileId) {
+        fileId = await uploadInstructionFile(file)
+        setUploadedFileId(fileId)
+      }
+      const payload = { ...form, fileId }
       const { service: saved } = service
-        ? await api.adminUpdateService(service.id, form)
-        : await api.adminCreateService(form)
+        ? await api.adminUpdateService(service.id, payload)
+        : await api.adminCreateService(payload)
       onSaved(saved)
     } catch (err) {
       if (err instanceof ApiError && err.field) setErrors({ [err.field]: err.message })
@@ -197,17 +216,22 @@ export function ServiceForm({
       className="flex w-full flex-col gap-6 rounded-[20px] border border-[var(--line)] bg-white p-5 lg:max-w-[760px] lg:p-8"
     >
       <h2 className="text-[24px] font-bold text-[var(--ink)]">
-        {service ? 'Изменить услугу' : 'Новая услуга'}
+        {service ? `Изменить ${service.kind === 'instruction' ? 'инструкцию' : 'услугу'}` : 'Новая позиция'}
       </h2>
 
-      <Segmented<GroupId>
+      {!service && <Segmented<'service' | 'instruction'> label="Тип позиции" value={form.kind} options={[
+        { value: 'service', label: 'Услуга' },
+        ...(canManageInstructions ? [{ value: 'instruction' as const, label: 'Инструкция' }] : []),
+      ]} onChange={(kind) => { setForm(kind === 'instruction' ? { ...EMPTY, kind, group: 'instructions' } : { ...EMPTY }); setFile(null); setUploadedFileId(null) }} />}
+
+      {form.kind === 'service' && <Segmented<GroupId>
         label="Раздел каталога"
         value={form.group}
-        options={GROUPS.map((g) => ({ value: g.id, label: g.title }))}
+        options={GROUPS.filter((g) => g.id !== 'instructions').map((g) => ({ value: g.id, label: g.title }))}
         onChange={(group) => set('group', group)}
-      />
+      />}
 
-      <div className="flex w-full flex-col gap-[6px]">
+      {form.kind === 'service' && <div className="flex w-full flex-col gap-[6px]">
         <Field
           label="Подраздел"
           optional
@@ -224,7 +248,7 @@ export function ServiceForm({
         <span className="text-[13px] text-[var(--ink-2)]">
           Выберите из списка или впишите новый. Пусто — услуга без подзаголовка.
         </span>
-      </div>
+      </div>}
 
       <Field
         label="Название"
@@ -234,24 +258,38 @@ export function ServiceForm({
         placeholder="Например: Декларация УСН «доходы» с расчётом налога"
       />
 
-      <Field
+      {form.kind === 'service' && <Field
         label="Цена"
         value={form.price}
         onChange={(e) => set('price', e.target.value)}
         error={errors.price}
         placeholder="1 900 ₽, от 3 000 ₽ или по запросу"
         className="lg:max-w-[280px]"
-      />
+      />}
 
-      <TextArea
+      {form.kind === 'instruction' && <>
+        <TextArea label="Краткое описание" value={form.description} onChange={(e) => set('description', e.target.value)} error={errors.description} rows={3} />
+        <label className="flex flex-col gap-1 text-[14px] font-semibold text-[var(--ink)]">Цена, ₽
+          <input type="number" min="1" max="1000000" step="1" inputMode="numeric" value={form.priceAmount ?? ''} onChange={(e) => set('priceAmount', e.target.value ? Number(e.target.value) : null)} className="h-[46px] max-w-[280px] rounded-[10px] border border-[var(--line)] px-3 text-[16px] font-normal" />
+          {errors.priceAmount && <span className="text-[var(--danger)]">{errors.priceAmount}</span>}
+        </label>
+        <label className="flex flex-col gap-2 text-[14px] font-semibold text-[var(--ink)]">Файл Word (.docx), до 20 МБ
+          <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setUploadedFileId(null) }} className="max-w-full text-[14px] font-normal" />
+          <span className="font-normal text-[var(--ink-2)]">{file ? `Выбран: ${file.name}` : service?.hasFile ? 'Файл загружен. Выберите другой для замены.' : 'Файл обязателен для новой инструкции.'}</span>
+          {errors.file && <span className="text-[var(--danger)]">{errors.file}</span>}
+        </label>
+        <label className="flex items-center gap-2 text-[14px] font-semibold text-[var(--ink)]"><input type="checkbox" checked={form.published} onChange={(e) => set('published', e.target.checked)} className="h-[18px] w-[18px]" />Показывать в каталоге</label>
+      </>}
+
+      {form.kind === 'service' && <TextArea
         label="Кому и когда"
         optional
         value={form.audience}
         onChange={(e) => set('audience', e.target.value)}
         placeholder="Сдают ИП и ООО по итогам года: все доходы за год и расчёт налога."
-      />
+      />}
 
-      <div className="flex w-full flex-col gap-3">
+      {form.kind === 'service' && <div className="flex w-full flex-col gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-[14px] font-semibold text-[var(--ink)]">Что понадобится</span>
           <span className="text-[13px] text-[var(--ink-2)]">
@@ -284,16 +322,16 @@ export function ServiceForm({
           <Plus size={18} />
           Добавить документ
         </button>
-      </div>
+      </div>}
 
-      <TextArea
+      {form.kind === 'service' && <TextArea
         label="Что получите"
         optional
         rows={4}
         value={form.result}
         onChange={(e) => set('result', e.target.value)}
         placeholder="Декларацию в двух форматах: PDF и XML…"
-      />
+      />}
 
       {formError && (
         <p role="alert" className="text-[15px] font-medium text-[var(--danger)]">
@@ -303,7 +341,7 @@ export function ServiceForm({
 
       <div className="flex w-full flex-col gap-3 lg:flex-row">
         <SubmitButton disabled={saving} className="lg:w-auto">
-          {saving ? 'Сохраняем…' : service ? 'Сохранить' : 'Добавить услугу'}
+          {saving ? 'Сохраняем…' : service ? 'Сохранить' : form.kind === 'instruction' ? 'Добавить инструкцию' : 'Добавить услугу'}
         </SubmitButton>
         <button
           type="button"

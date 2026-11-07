@@ -30,11 +30,12 @@ function toCard(service: Service): ServiceCardData {
   return {
     title: service.title,
     price: service.price,
+    actionLabel: service.kind === 'instruction' ? 'Купить инструкцию' : undefined,
+    description: service.kind === 'instruction' ? service.description : service.needs.length ? undefined : service.audience || undefined,
     needs: service.needs.length
       ? service.needs.slice(0, CARD_NEEDS_LIMIT).map((n) => n.text)
       : undefined,
     more: rest > 0 ? `и ещё ${rest} →` : undefined,
-    description: service.needs.length ? undefined : service.audience || undefined,
   }
 }
 
@@ -105,7 +106,7 @@ export function CatalogPage() {
   const { services, loading, error } = useServices()
 
   const catalog = useMemo(
-    () => buildCatalog(parentOrderId ? (services ?? []).filter((service) => /\d/.test(service.price)) : (services ?? [])),
+    () => buildCatalog(parentOrderId ? (services ?? []).filter((service) => service.kind === 'service' && /\d/.test(service.price)) : (services ?? []), !parentOrderId),
     [services, parentOrderId],
   )
   const groupIds = useMemo(() => catalog.map((g) => g.id), [catalog])
@@ -177,6 +178,7 @@ export function CatalogPage() {
                 <h2 className="text-[28px] font-bold text-[var(--ink)] lg:text-[32px]">
                   {group.title}
                 </h2>
+                {!loading && group.id === 'instructions' && group.subgroups.length === 0 && <p className="text-[16px] text-[var(--ink-2)]">Здесь скоро появятся готовые инструкции.</p>}
                 {group.subgroups.map((subgroup) => (
                   <Subgroup key={subgroup.title || group.id} subgroup={subgroup} parentOrderId={parentOrderId} cart={cart} />
                 ))}

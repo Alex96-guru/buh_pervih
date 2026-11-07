@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { buildCatalog, GROUPS, serviceHref } from '../../lib/catalog'
 import type { GroupId, Service } from '../../lib/catalog'
 import { useServices } from '../../lib/useServices'
+import { useAuth } from '../../lib/auth'
 
 /** Сколько документов в чек-листе — по-русски. */
 function docsLabel(n: number): string {
@@ -24,10 +25,12 @@ function ServiceRow({
   service,
   onEdit,
   onDeleted,
+  canManageInstructions,
 }: {
   service: Service
   onEdit: () => void
   onDeleted: () => void
+  canManageInstructions: boolean
 }) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -46,7 +49,7 @@ function ServiceRow({
   }
 
   // Чего не хватает до полной страницы услуги — чтобы было видно, что дописать.
-  const missing = [
+  const missing = service.kind === 'instruction' ? [] : [
     !service.audience && '«Кому и когда»',
     !service.result && '«Что получите»',
   ].filter(Boolean)
@@ -56,7 +59,8 @@ function ServiceRow({
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="text-[16px] font-bold text-[var(--ink)]">{service.title}</p>
         <p className="text-[14px] text-[var(--ink-2)]">
-          {docsLabel(service.needs.length)}
+          {service.kind === 'instruction' ? `Инструкция · ${service.hasFile ? 'файл загружен' : 'нет файла'}` : docsLabel(service.needs.length)}
+          {service.kind === 'instruction' && !service.published && <span className="text-[#b76e00]"> · скрыта</span>}
           {missing.length > 0 && (
             <span className="text-[#b76e00]"> · не заполнено: {missing.join(', ')}</span>
           )}
@@ -94,7 +98,7 @@ function ServiceRow({
         </div>
       ) : (
         <div className="flex shrink-0 items-center gap-1">
-          <a
+          {service.published && <a
             href={serviceHref(service.slug)}
             target="_blank"
             rel="noreferrer"
@@ -102,23 +106,23 @@ function ServiceRow({
           >
             <ExternalLink size={15} />
             На сайте
-          </a>
-          <button
+          </a>}
+          {(service.kind === 'service' || canManageInstructions) && <button
             type="button"
             onClick={onEdit}
             className="flex h-[36px] cursor-pointer items-center gap-[6px] rounded-[10px] px-3 text-[14px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--page-bg)]"
           >
             <Pencil size={15} />
             Изменить
-          </button>
-          <button
+          </button>}
+          {(service.kind === 'service' || canManageInstructions) && <button
             type="button"
             onClick={() => setConfirming(true)}
             className="flex h-[36px] cursor-pointer items-center gap-[6px] rounded-[10px] px-3 text-[14px] font-semibold text-[var(--danger)] transition-colors hover:bg-[#fdecec]"
           >
             <Trash2 size={15} />
             Удалить
-          </button>
+          </button>}
         </div>
       )}
     </li>
@@ -128,7 +132,9 @@ function ServiceRow({
 type Mode = { kind: 'list' } | { kind: 'create' } | { kind: 'edit'; service: Service }
 
 export function AdminServices() {
-  const { services, loading, error, reload } = useServices()
+  const { services, loading, error, reload } = useServices(true)
+  const { user } = useAuth()
+  const canManageInstructions = user?.instructionManager === true
   const [mode, setMode] = useState<Mode>({ kind: 'list' })
 
   const catalog = useMemo(() => buildCatalog(services ?? []), [services])
@@ -156,6 +162,7 @@ export function AdminServices() {
       <ServiceForm
         key={mode.kind === 'edit' ? mode.service.id : 'new'}
         service={mode.kind === 'edit' ? mode.service : undefined}
+        canManageInstructions={canManageInstructions}
         subgroups={subgroups}
         onSaved={() => {
           reload()
@@ -170,7 +177,7 @@ export function AdminServices() {
     <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <p className="text-[17px] text-[var(--ink-2)]">
-          {loading ? 'Загружаем…' : `Всего услуг: ${services?.length ?? 0}`}
+          {loading ? 'Загружаем…' : `Всего позиций: ${services?.length ?? 0}`}
         </p>
         <button
           type="button"
@@ -181,7 +188,7 @@ export function AdminServices() {
           className="flex h-[48px] w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-[var(--ink)] px-5 text-[16px] font-bold text-white transition-colors hover:bg-[#1a2740]"
         >
           <Plus size={18} />
-          Добавить услугу
+          Добавить позицию
         </button>
       </div>
 
@@ -215,6 +222,7 @@ export function AdminServices() {
                       window.scrollTo({ top: 0 })
                     }}
                     onDeleted={reload}
+                    canManageInstructions={canManageInstructions}
                   />
                 ))}
               </ul>

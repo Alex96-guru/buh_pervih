@@ -124,7 +124,7 @@ ordersRouter.post('/', async (req, res, next) => {
         new Set(requested).size !== requested.length) {
       return res.status(400).json({ error: 'Выберите от 1 до 10 разных услуг' })
     }
-    const { rows: found } = await pool.query('SELECT * FROM services WHERE slug = ANY($1::text[])', [requested])
+    const { rows: found } = await pool.query("SELECT * FROM services WHERE slug = ANY($1::text[]) AND kind = 'service'", [requested])
     const bySlug = new Map(found.map((service) => [service.slug, service]))
     if (requested.some((item) => !bySlug.has(item))) return res.status(404).json({ error: 'Услуга не найдена' })
     const services = requested.map((item) => bySlug.get(item))

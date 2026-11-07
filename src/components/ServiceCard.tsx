@@ -13,6 +13,7 @@ export type ServiceCardData = {
   description?: string
   needs?: string[]
   more?: string
+  actionLabel?: string
 }
 
 /**
@@ -63,7 +64,7 @@ export function ServiceCard({
         </h3>
 
         {card.description && (
-          <p className="w-full text-[15px] leading-[22px] text-[var(--ink-2)]">
+          <p className="line-clamp-5 w-full text-[15px] leading-[22px] text-[var(--ink-2)]">
             {card.description}
           </p>
         )}
@@ -92,7 +93,7 @@ export function ServiceCard({
           <span className="text-[24px] font-extrabold tracking-[-0.3px] text-[var(--ink)]">
             {card.price}
           </span>
-          <ArrowBadge size={44} dark={card.featured} />
+          <span className="flex items-center gap-2"><span className="text-[13px] font-semibold text-[var(--accent)]">{card.actionLabel}</span><ArrowBadge size={44} dark={card.featured} /></span>
         </div>
       </a>
     </RevealDiv>
@@ -120,11 +121,12 @@ export function PriceRow({
         <p className="w-full text-[18px] leading-[23px] font-bold text-[var(--ink)] transition-colors group-hover:text-[var(--accent)]">
           {card.title}
         </p>
+        {card.actionLabel && card.description && <p className="line-clamp-3 text-[14px] leading-[20px] text-[var(--ink-2)]">{card.description}</p>}
         <div className="flex w-full items-center justify-between">
           <span className="text-[18px] font-extrabold tracking-[-0.3px] text-[var(--ink)]">
             {card.price}
           </span>
-          <ArrowBadge size={36} />
+          <span className="flex items-center gap-2"><span className="text-[12px] font-semibold text-[var(--accent)]">{card.actionLabel}</span><ArrowBadge size={36} /></span>
         </div>
       </a>
     </RevealDiv>

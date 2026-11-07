@@ -14,7 +14,7 @@ export type CatalogNeed = {
   hint?: string
 }
 
-export type GroupId = 'ip' | 'person'
+export type GroupId = 'ip' | 'person' | 'instructions'
 
 export type Service = {
   id: string
@@ -30,12 +30,18 @@ export type Service = {
   needs: CatalogNeed[]
   /** «Что получите». */
   result: string
+  kind: 'service' | 'instruction'
+  description: string
+  priceAmount: number | null
+  published: boolean
+  hasFile: boolean
 }
 
 /** Разделы каталога — они же вкладки-якоря: /services#ip */
 export const GROUPS: Array<{ id: GroupId; title: string }> = [
-  { id: 'ip', title: 'ИП и ООО' },
-  { id: 'person', title: 'Физлица' },
+  { id: 'ip', title: 'Для ИП и ООО' },
+  { id: 'person', title: 'Для физических лиц' },
+  { id: 'instructions', title: 'Готовые инструкции' },
 ]
 
 export type CatalogSubgroup = {
@@ -52,9 +58,9 @@ export type CatalogGroup = {
 /**
  * Раскладывает услуги по разделам и подразделам. Сервер отдаёт их уже
  * по порядку, поэтому подразделы идут в порядке своей первой услуги.
- * Пустые разделы не показываем.
+ * Пустой раздел инструкций можно показать до публикации первой позиции.
  */
-export function buildCatalog(services: Service[]): CatalogGroup[] {
+export function buildCatalog(services: Service[], showEmptyInstructions = false): CatalogGroup[] {
   return GROUPS.map((group) => {
     const subgroups: CatalogSubgroup[] = []
     for (const service of services) {
@@ -67,7 +73,7 @@ export function buildCatalog(services: Service[]): CatalogGroup[] {
       subgroup.items.push(service)
     }
     return { ...group, subgroups }
-  }).filter((group) => group.subgroups.length > 0)
+  }).filter((group) => group.subgroups.length > 0 || (showEmptyInstructions && group.id === 'instructions'))
 }
 
 /** На карточке каталога — первые три документа и «и ещё N». */
@@ -75,7 +81,7 @@ export const CARD_NEEDS_LIMIT = 3
 
 export const CATALOG_HERO = {
   title: 'Услуги и цены',
-  lead: 'Указана базовая стоимость. Точную сумму назовём после просмотра документов — до начала работы.',
+  lead: 'Для услуг указана базовая стоимость: итоговую сумму сообщим после выполнения работы. Готовые инструкции оплачиваются заранее и доступны сразу после оплаты.',
 }
 
 export const CONSULTATION = {

@@ -9,15 +9,14 @@ function messageOf(err: unknown): string {
 }
 
 /** Весь каталог. reload — чтобы админка перечитала список после правки. */
-export function useServices() {
+export function useServices(forAdmin = false) {
   const [state, setState] = useState<State<Service[]>>({ data: null, loading: true, error: '' })
   const [version, setVersion] = useState(0)
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
-    api
-      .services()
+    (forAdmin ? api.adminServices() : api.services())
       .then(({ services }) => {
         if (!cancelled) setState({ data: services, loading: false, error: '' })
       })
@@ -28,7 +27,7 @@ export function useServices() {
     return () => {
       cancelled = true
     }
-  }, [version])
+  }, [version, forAdmin])
 
   const reload = useCallback(() => setVersion((v) => v + 1), [])
 

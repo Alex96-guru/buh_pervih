@@ -21,6 +21,8 @@ function publicUser(row) {
     phone: row.phone,
     clientType: row.client_type,
     role: row.role,
+    instructionManager: row.role === 'admin' && Boolean(process.env.INSTRUCTION_MANAGER_EMAIL) &&
+      row.email?.toLowerCase() === process.env.INSTRUCTION_MANAGER_EMAIL.trim().toLowerCase(),
     emailVerified: row.email_verified_at !== null,
   }
 }
