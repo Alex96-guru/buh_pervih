@@ -6,10 +6,12 @@ import { api } from '../lib/api'
 import type { InstructionDownload, InstructionPurchase as Purchase } from '../lib/api'
 import type { PaymentMethod } from '../lib/orders'
 import { formatDateTime, formatRub } from '../lib/orders'
+import { useAuth } from '../lib/auth'
 
 export function InstructionPurchase({ service }: { service: Service }) {
+  const { user } = useAuth()
   const [enabled, setEnabled] = useState<boolean | null>(null)
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(user?.email ?? '')
   const [method, setMethod] = useState<PaymentMethod>('card')
   const [purchase, setPurchase] = useState<Purchase | null>(null)
   const [accessToken, setAccessToken] = useState('')
@@ -17,6 +19,11 @@ export function InstructionPurchase({ service }: { service: Service }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const storageKey = `instruction-purchase:${service.slug}`
+
+  useEffect(() => {
+    const signedInEmail = user?.email
+    if (signedInEmail) setEmail((current) => current || signedInEmail)
+  }, [user?.email])
 
   useEffect(() => {
     let active = true
@@ -76,7 +83,7 @@ export function InstructionPurchase({ service }: { service: Service }) {
 
   return (
     <section id="buy-instruction" className="flex scroll-mt-[150px] flex-col gap-4 rounded-[20px] border border-[var(--line)] bg-white p-5 lg:p-7">
-      <h2 className="text-[22px] font-bold text-[var(--ink)]">Купить инструкцию</h2>
+      <h2 className="text-[22px] font-bold text-[var(--ink)]">{purchase?.status === 'paid' ? 'Ваша инструкция' : 'Купить инструкцию'}</h2>
       <p className="text-[16px] text-[var(--ink-2)]">Word-файл .docx · {formatRub(service.priceAmount ?? 0)}. Регистрация не требуется.</p>
       {enabled === null && <p className="text-[15px] text-[var(--ink-2)]">Проверяем доступность оплаты…</p>}
       {enabled === false && <p role="status" className="rounded-[12px] bg-[var(--page-bg)] p-4 text-[15px] text-[var(--ink)]">Оплата временно недоступна.</p>}

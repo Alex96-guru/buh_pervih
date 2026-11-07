@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, Trash2, Upload } from 'lucide-react'
 import { Field, Segmented, SubmitButton, TextArea } from '../auth/fields'
 import { api, ApiError, uploadInstructionFile } from '../../lib/api'
 import type { ServicePayload } from '../../lib/api'
@@ -274,11 +274,15 @@ export function ServiceForm({
           <input type="number" min="1" max="1000000" step="1" inputMode="numeric" value={form.priceAmount ?? ''} onChange={(e) => set('priceAmount', e.target.value ? Number(e.target.value) : null)} className="h-[46px] max-w-[280px] rounded-[10px] border border-[var(--line)] px-3 text-[16px] font-normal" />
           {errors.priceAmount && <span className="text-[var(--danger)]">{errors.priceAmount}</span>}
         </label>
-        <label className="flex flex-col gap-2 text-[14px] font-semibold text-[var(--ink)]">Файл Word (.docx), до 20 МБ
-          <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setUploadedFileId(null) }} className="max-w-full text-[14px] font-normal" />
-          <span className="font-normal text-[var(--ink-2)]">{file ? `Выбран: ${file.name}` : service?.hasFile ? 'Файл загружен. Выберите другой для замены.' : 'Файл обязателен для новой инструкции.'}</span>
+        <div className="flex flex-col gap-2 text-[14px] font-semibold text-[var(--ink)]">
+          <span>Файл Word (.docx), до 20 МБ</span>
+          <label className="group flex w-full cursor-pointer flex-col gap-2 sm:w-fit">
+            <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setUploadedFileId(null) }} className="sr-only" />
+            <span className="flex min-h-[50px] items-center justify-center gap-2 rounded-[12px] bg-[var(--accent)] px-5 text-[15px] font-bold text-white transition-colors group-hover:bg-[#2449d8] group-focus-within:outline-2 group-focus-within:outline-offset-2 group-focus-within:outline-[var(--accent)] sm:justify-start"><Upload size={19} />{service?.hasFile ? 'Заменить файл' : 'Добавить файл'}</span>
+          </label>
+          <span className="break-all font-normal text-[var(--ink-2)]">{file ? `Выбран: ${file.name}` : service?.hasFile ? 'Файл загружен. Выберите другой для замены.' : 'Файл обязателен для новой инструкции.'}</span>
           {errors.file && <span className="text-[var(--danger)]">{errors.file}</span>}
-        </label>
+        </div>
         <label className="flex items-center gap-2 text-[14px] font-semibold text-[var(--ink)]"><input type="checkbox" checked={form.published} onChange={(e) => set('published', e.target.checked)} className="h-[18px] w-[18px]" />Показывать в каталоге</label>
       </>}
 

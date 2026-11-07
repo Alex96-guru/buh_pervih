@@ -17,23 +17,23 @@ import { InstructionPurchase } from '../components/InstructionPurchase'
  * Цена, «Заказать» и подсказка про документы. На десктопе — правая колонка.
  * Неавторизованного оформление само отправит на вход и вернёт обратно.
  */
-function Summary({ slug, price, parentOrderId, cart, instruction }: { slug: string; price: string; parentOrderId: string | null; cart: string[]; instruction?: boolean }) {
+function Summary({ slug, price, parentOrderId, cart }: { slug: string; price: string; parentOrderId: string | null; cart: string[] }) {
   return (
     <div className="flex w-full flex-col gap-[14px] rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-4 lg:p-7">
       <p className="text-[40px] font-extrabold tracking-[-1.2px] text-[var(--accent)] lg:text-[44px] lg:tracking-[-1.32px]">
         {price}
       </p>
-      {instruction ? <Button href="#buy-instruction" className="w-full">Купить инструкцию</Button> : (!parentOrderId || /\d/.test(price)) ? (
+      {(!parentOrderId || /\d/.test(price)) ? (
         <Button href={withOrderCart(checkoutPath(slug), parentOrderId, cart.filter((item) => item !== slug))} className="w-full">
           {parentOrderId ? 'Добавить к заказу' : 'Заказать'}
         </Button>
       ) : <p className="text-[14px] text-[var(--ink-2)]">Для докупки выберите услугу с указанной ценой.</p>}
-      {!instruction && <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
+      <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
         <Info size={20} className="mt-px shrink-0 text-[var(--accent)]" />
         <p className="flex-1 text-[15px] leading-[22px] font-medium text-[var(--ink)]">
           {DOCS_NOTE}
         </p>
-      </div>}
+      </div>
     </div>
   )
 }
@@ -131,7 +131,7 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 lg:gap-8">
+    <div className={cn('mx-auto flex w-full flex-col gap-5 lg:gap-8', service.kind === 'instruction' ? 'max-w-[800px]' : 'max-w-[1200px]')}>
       <nav aria-label="Хлебные крошки" className="flex flex-wrap items-center gap-2 lg:gap-[10px]">
         {crumbs.map((crumb) => (
           <Fragment key={crumb.href}>
@@ -157,9 +157,9 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
       </h1>
 
       {/* Мобайл: цена и кнопка сразу под заголовком */}
-      <div className="lg:hidden">
-        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} instruction={service.kind === 'instruction'} />
-      </div>
+      {service.kind === 'service' && <div className="lg:hidden">
+        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
+      </div>}
 
       <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-start lg:gap-20 lg:pt-2">
         <div className="flex w-full flex-col gap-5 lg:flex-1 lg:gap-9">
@@ -186,9 +186,9 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
         </div>
 
         {/* Десктоп: сводка справа и едет вместе с прокруткой */}
-        <div className="hidden w-[380px] shrink-0 lg:sticky lg:top-[104px] lg:block">
-          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} instruction={service.kind === 'instruction'} />
-        </div>
+        {service.kind === 'service' && <div className="hidden w-[380px] shrink-0 lg:sticky lg:top-[104px] lg:block">
+          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
+        </div>}
       </div>
     </div>
   )

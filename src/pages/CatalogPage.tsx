@@ -30,7 +30,6 @@ function toCard(service: Service): ServiceCardData {
   return {
     title: service.title,
     price: service.price,
-    actionLabel: service.kind === 'instruction' ? 'Купить инструкцию' : undefined,
     description: service.kind === 'instruction' ? service.description : service.needs.length ? undefined : service.audience || undefined,
     needs: service.needs.length
       ? service.needs.slice(0, CARD_NEEDS_LIMIT).map((n) => n.text)
