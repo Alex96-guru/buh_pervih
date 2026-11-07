@@ -37,7 +37,7 @@ test('instruction catalog, management, guest purchase and protected download', {
     server = spawn(process.execPath, ['server/index.mjs'], {
       cwd: process.cwd(),
       env: {
-        ...process.env, DATABASE_URL: testUrl.toString(), APP_ORIGIN: origin,
+        ...process.env, DATABASE_URL: testUrl.toString(), APP_ORIGIN: 'http://localhost:5173',
         PORT: String(port), NODE_ENV: 'test', ENABLE_TEST_PAYMENTS: 'true',
         INSTRUCTION_MANAGER_EMAIL: 'olga@example.test',
       },
@@ -94,6 +94,10 @@ test('instruction catalog, management, guest purchase and protected download', {
     assert.equal((await upload(olga.cookie, Buffer.alloc(20 * 1024 * 1024 + 1))).status, 413)
     const uploaded = await upload(olga.cookie)
     assert.equal(uploaded.status, 201)
+    assert.equal((await call('/api/admin/services/instruction-files', {
+      method: 'POST', cookie: olga.cookie, body: docx,
+      headers: { Origin: 'http://localhost:9999', 'Content-Type': 'application/octet-stream', 'X-File-Name': 'sample.docx' },
+    })).status, 403)
     const payload = {
       kind: 'instruction', title: 'Готовая инструкция', description: 'Как заполнить форму',
       priceAmount: 250, published: true, fileId: uploaded.data.fileId,

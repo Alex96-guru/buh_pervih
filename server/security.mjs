@@ -1,5 +1,14 @@
 const appOrigin = process.env.APP_ORIGIN?.replace(/\/$/, '')
 
+function isLocalOrigin(value) {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+  } catch {
+    return false
+  }
+}
+
 if (process.env.NODE_ENV === 'production' && (!appOrigin || new URL(appOrigin).protocol !== 'https:')) {
   throw new Error('В production требуется APP_ORIGIN с HTTPS-адресом сайта')
 }
@@ -30,7 +39,10 @@ export function protectApi(req, res, next) {
       source = null
     }
   }
-  if (source !== expected || req.get('sec-fetch-site') === 'cross-site') {
+  const localDevelopmentOrigin = process.env.NODE_ENV !== 'production' &&
+    isLocalOrigin(appOrigin) && isLocalOrigin(source) &&
+    source === `${req.protocol}://${req.get('host')}`
+  if ((!localDevelopmentOrigin && source !== expected) || req.get('sec-fetch-site') === 'cross-site') {
     return res.status(403).json({ error: 'Запрос отклонён: неверный источник' })
   }
   next()

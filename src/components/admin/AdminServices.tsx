@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
 import { ServiceForm } from './ServiceForm'
 import { api } from '../../lib/api'
@@ -134,8 +134,29 @@ type Mode = { kind: 'list' } | { kind: 'create' } | { kind: 'edit'; service: Ser
 export function AdminServices() {
   const { services, loading, error, reload } = useServices(true)
   const { user } = useAuth()
-  const canManageInstructions = user?.instructionManager === true
+  const [canManageInstructions, setCanManageInstructions] = useState(user?.instructionManager === true)
   const [mode, setMode] = useState<Mode>({ kind: 'list' })
+
+  useEffect(() => {
+    let active = true
+    void api.me().then(({ user: current }) => {
+      if (active) setCanManageInstructions(current.instructionManager === true)
+    }).catch(() => {
+      if (active) setCanManageInstructions(false)
+    })
+    return () => { active = false }
+  }, [user?.id])
+
+  const openCreate = async () => {
+    try {
+      const { user: current } = await api.me()
+      setCanManageInstructions(current.instructionManager === true)
+    } catch {
+      setCanManageInstructions(false)
+    }
+    setMode({ kind: 'create' })
+    window.scrollTo({ top: 0 })
+  }
 
   const catalog = useMemo(() => buildCatalog(services ?? []), [services])
 
@@ -181,10 +202,7 @@ export function AdminServices() {
         </p>
         <button
           type="button"
-          onClick={() => {
-            setMode({ kind: 'create' })
-            window.scrollTo({ top: 0 })
-          }}
+          onClick={() => { void openCreate() }}
           className="flex h-[48px] w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-[var(--ink)] px-5 text-[16px] font-bold text-white transition-colors hover:bg-[#1a2740]"
         >
           <Plus size={18} />

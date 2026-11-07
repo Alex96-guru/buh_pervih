@@ -223,6 +223,7 @@ export function ServiceForm({
         { value: 'service', label: 'Услуга' },
         ...(canManageInstructions ? [{ value: 'instruction' as const, label: 'Инструкция' }] : []),
       ]} onChange={(kind) => { setForm(kind === 'instruction' ? { ...EMPTY, kind, group: 'instructions' } : { ...EMPTY }); setFile(null); setUploadedFileId(null) }} />}
+      {!service && !canManageInstructions && <p className="text-[14px] text-[var(--ink-2)]">Инструкции может добавлять только учётная запись Ольги.</p>}
 
       {form.kind === 'service' && <Segmented<GroupId>
         label="Раздел каталога"
