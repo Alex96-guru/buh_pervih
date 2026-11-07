@@ -1,4 +1,5 @@
-const appOrigin = process.env.APP_ORIGIN?.replace(/\/$/, '')
+const appOrigin = process.env.APP_ORIGIN?.replace(/\/$/, '') ||
+  (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined)
 
 function isLocalOrigin(value) {
   try {

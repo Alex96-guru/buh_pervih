@@ -3,16 +3,12 @@ import { pool } from '../db/pool.mjs'
 import { requireAdmin } from '../middleware.mjs'
 import express from 'express'
 import { fileTypeFromBuffer } from 'file-type'
+import { isInstructionManager } from '../instructions/config.mjs'
 
 const GROUPS = ['ip', 'person']
-const MANAGER_EMAIL = process.env.INSTRUCTION_MANAGER_EMAIL?.trim().toLowerCase()
-
-function canManageInstructions(user) {
-  return Boolean(MANAGER_EMAIL && user?.role === 'admin' && user.email?.toLowerCase() === MANAGER_EMAIL)
-}
 
 function requireInstructionManager(req, res, next) {
-  if (!canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
+  if (!isInstructionManager(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
   next()
 }
 
@@ -272,7 +268,7 @@ adminServicesRouter.post('/', async (req, res, next) => {
     if (!parsed.data) return badRequest(res, parsed.field, parsed.message)
     const s = parsed.data
     if (s.kind === 'instruction') {
-      if (!canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
+      if (!isInstructionManager(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
       if (!(await validInstructionFile(s.fileId, req.user.id))) return badRequest(res, 'fileId', 'Загрузите файл Word')
     }
 
@@ -309,7 +305,7 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
     if (!current[0]) return res.status(404).json({ error: 'Услуга не найдена' })
     if (current[0].kind !== s.kind) return res.status(409).json({ error: 'Тип позиции нельзя изменить после создания' })
     if (s.kind === 'instruction') {
-      if (!canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
+      if (!isInstructionManager(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
       if (s.fileId && !(await validInstructionFile(s.fileId, req.user.id))) return badRequest(res, 'fileId', 'Файл не найден')
       if (!s.fileId && !current[0].instruction_file_id) return badRequest(res, 'fileId', 'Загрузите файл Word')
     }
@@ -359,7 +355,7 @@ adminServicesRouter.delete('/:id', async (req, res, next) => {
   try {
     const { rows } = await pool.query('SELECT kind FROM services WHERE id = $1', [req.params.id])
     if (!rows[0]) return res.status(404).json({ error: 'Услуга не найдена' })
-    if (rows[0].kind === 'instruction' && !canManageInstructions(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
+    if (rows[0].kind === 'instruction' && !isInstructionManager(req.user)) return res.status(403).json({ error: 'Управление инструкциями недоступно' })
     const { rowCount } = await pool.query('DELETE FROM services WHERE id = $1', [req.params.id])
     if (rowCount === 0) return res.status(404).json({ error: 'Услуга не найдена' })
     return res.status(204).end()

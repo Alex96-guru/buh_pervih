@@ -162,7 +162,7 @@ test('instruction catalog, management, guest purchase and protected download', {
       server = spawn(process.execPath, ['server/index.mjs'], {
         cwd: process.cwd(),
         env: {
-          ...process.env, DATABASE_URL: testUrl.toString(), APP_ORIGIN: productionOrigin,
+          ...process.env, DATABASE_URL: testUrl.toString(), APP_ORIGIN: '', RAILWAY_PUBLIC_DOMAIN: 'example.test',
           PORT: String(productionPort), NODE_ENV: 'production', ENABLE_TEST_PAYMENTS: 'true',
           INSTRUCTION_MANAGER_EMAIL: 'olga@example.test',
         },

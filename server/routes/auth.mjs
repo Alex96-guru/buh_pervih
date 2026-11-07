@@ -8,6 +8,7 @@ import {
   destroySession,
 } from '../auth/sessions.mjs'
 import { REQUIRE_VERIFIED_EMAIL } from '../auth/config.mjs'
+import { isInstructionManager } from '../instructions/config.mjs'
 import { consumeAuthLimit, resetAuthLimit } from '../auth/rate-limit.mjs'
 
 export const authRouter = Router()
@@ -21,8 +22,7 @@ function publicUser(row) {
     phone: row.phone,
     clientType: row.client_type,
     role: row.role,
-    instructionManager: row.role === 'admin' && Boolean(process.env.INSTRUCTION_MANAGER_EMAIL) &&
-      row.email?.toLowerCase() === process.env.INSTRUCTION_MANAGER_EMAIL.trim().toLowerCase(),
+    instructionManager: isInstructionManager(row),
     emailVerified: row.email_verified_at !== null,
   }
 }
