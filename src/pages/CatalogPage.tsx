@@ -31,6 +31,7 @@ function toCard(service: Service): ServiceCardData {
     title: service.title,
     price: service.price,
     description: service.kind === 'instruction' ? service.description : service.needs.length ? undefined : service.audience || undefined,
+    specialistName: service.specialistName || undefined,
     needs: service.needs.length
       ? service.needs.slice(0, CARD_NEEDS_LIMIT).map((n) => n.text)
       : undefined,
@@ -105,7 +106,7 @@ export function CatalogPage() {
   const { services, loading, error } = useServices()
 
   const catalog = useMemo(
-    () => buildCatalog(parentOrderId ? (services ?? []).filter((service) => service.kind === 'service' && /\d/.test(service.price)) : (services ?? []), !parentOrderId),
+    () => buildCatalog(parentOrderId ? (services ?? []).filter((service) => service.kind === 'service' && !service.specialistName && /\d/.test(service.price)) : (services ?? []), !parentOrderId),
     [services, parentOrderId],
   )
   const groupIds = useMemo(() => catalog.map((g) => g.id), [catalog])

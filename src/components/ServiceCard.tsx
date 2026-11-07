@@ -13,6 +13,7 @@ export type ServiceCardData = {
   description?: string
   needs?: string[]
   more?: string
+  specialistName?: string
 }
 
 /**
@@ -68,6 +69,8 @@ export function ServiceCard({
           </p>
         )}
 
+        {card.specialistName && <p className="text-[14px] font-semibold text-[var(--ink-2)]">Специалист: {card.specialistName}</p>}
+
         {card.needs && (
           <div className="flex w-full flex-col gap-[7px]">
             <p className="text-[13px] font-bold tracking-[1px] text-[var(--ink-2)]">Понадобится</p>
@@ -121,6 +124,7 @@ export function PriceRow({
           {card.title}
         </p>
         {card.description && <p className="line-clamp-3 text-[14px] leading-[20px] text-[var(--ink-2)]">{card.description}</p>}
+        {card.specialistName && <p className="text-[13px] font-semibold text-[var(--ink-2)]">Специалист: {card.specialistName}</p>}
         <div className="flex w-full items-center justify-between">
           <span className="text-[18px] font-extrabold tracking-[-0.3px] text-[var(--ink)]">
             {card.price}

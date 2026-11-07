@@ -17,13 +17,15 @@ import { InstructionPurchase } from '../components/InstructionPurchase'
  * Цена, «Заказать» и подсказка про документы. На десктопе — правая колонка.
  * Неавторизованного оформление само отправит на вход и вернёт обратно.
  */
-function Summary({ slug, price, parentOrderId, cart }: { slug: string; price: string; parentOrderId: string | null; cart: string[] }) {
+function Summary({ slug, price, parentOrderId, cart, specialist }: { slug: string; price: string; parentOrderId: string | null; cart: string[]; specialist: boolean }) {
   return (
     <div className="flex w-full flex-col gap-[14px] rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-4 lg:p-7">
       <p className="text-[40px] font-extrabold tracking-[-1.2px] text-[var(--accent)] lg:text-[44px] lg:tracking-[-1.32px]">
         {price}
       </p>
-      {(!parentOrderId || /\d/.test(price)) ? (
+      {specialist ? (
+        <Button href="#specialist-contact" className="w-full">Связаться со специалистом</Button>
+      ) : (!parentOrderId || /\d/.test(price)) ? (
         <Button href={withOrderCart(checkoutPath(slug), parentOrderId, cart.filter((item) => item !== slug))} className="w-full">
           {parentOrderId ? 'Добавить к заказу' : 'Заказать'}
         </Button>
@@ -31,7 +33,7 @@ function Summary({ slug, price, parentOrderId, cart }: { slug: string; price: st
       <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
         <Info size={20} className="mt-px shrink-0 text-[var(--accent)]" />
         <p className="flex-1 text-[15px] leading-[22px] font-medium text-[var(--ink)]">
-          {DOCS_NOTE}
+          {specialist ? 'Уточните задачу и условия работы напрямую у специалиста.' : DOCS_NOTE}
         </p>
       </div>
     </div>
@@ -84,6 +86,21 @@ function TextBlock({
         {children}
       </p>
     </div>
+  )
+}
+
+function SpecialistContact({ service }: { service: Service }) {
+  return (
+    <section id="specialist-contact" className="flex scroll-mt-[150px] flex-col gap-4 rounded-[20px] border border-[var(--line)] bg-white p-5 lg:p-7">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-[22px] font-bold text-[var(--ink)]">Связаться со специалистом</h2>
+        <p className="text-[17px] font-semibold text-[var(--ink)]">{service.specialistName}</p>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        {service.telegramUrl && <Button href={service.telegramUrl} size={44} className="w-full sm:w-auto">Написать в Telegram</Button>}
+        {service.maxUrl && <Button href={service.maxUrl} size={44} variant="secondary" className="w-full sm:w-auto">Написать в MAX</Button>}
+      </div>
+    </section>
   )
 }
 
@@ -158,7 +175,7 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
 
       {/* Мобайл: цена и кнопка сразу под заголовком */}
       {service.kind === 'service' && <div className="lg:hidden">
-        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
+        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} specialist={Boolean(service.specialistName)} />
       </div>}
 
       <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-start lg:gap-20 lg:pt-2">
@@ -169,6 +186,8 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
               {audience}
             </TextBlock>
           )}
+
+          {service.kind === 'service' && service.specialistName && <SpecialistContact service={service} />}
 
           {service.kind === 'service' && needs.length > 0 && (
             <div className="flex w-full flex-col gap-3 rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-[14px] lg:p-7">
@@ -187,7 +206,7 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
 
         {/* Десктоп: сводка справа и едет вместе с прокруткой */}
         {service.kind === 'service' && <div className="hidden w-[380px] shrink-0 lg:sticky lg:top-[104px] lg:block">
-          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} />
+          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} specialist={Boolean(service.specialistName)} />
         </div>}
       </div>
     </div>

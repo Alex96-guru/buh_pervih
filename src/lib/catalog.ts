@@ -30,6 +30,9 @@ export type Service = {
   needs: CatalogNeed[]
   /** «Что получите». */
   result: string
+  specialistName: string
+  telegramUrl: string
+  maxUrl: string
   kind: 'service' | 'instruction'
   description: string
   priceAmount: number | null

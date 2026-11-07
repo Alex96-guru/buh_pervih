@@ -17,6 +17,7 @@ const EMPTY: ServicePayload = {
   audience: '',
   needs: [],
   result: '',
+  specialistName: '', telegramUrl: '', maxUrl: '',
   description: '', priceAmount: null, published: true, fileId: null,
 }
 
@@ -144,6 +145,9 @@ export function ServiceForm({
           audience: service.audience,
           needs: service.needs,
           result: service.result,
+          specialistName: service.specialistName,
+          telegramUrl: service.telegramUrl,
+          maxUrl: service.maxUrl,
           kind: service.kind, description: service.description,
           priceAmount: service.priceAmount, published: service.published,
           fileId: null,
@@ -267,6 +271,16 @@ export function ServiceForm({
         placeholder="1 900 ₽, от 3 000 ₽ или по запросу"
         className="lg:max-w-[280px]"
       />}
+
+      {form.kind === 'service' && <div className="flex w-full flex-col gap-4 rounded-[16px] border border-[var(--line)] bg-[var(--page-bg)] p-4">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-[17px] font-bold text-[var(--ink)]">Сторонний специалист</h3>
+          <p className="text-[13px] text-[var(--ink-2)]">Укажите имя и хотя бы одну ссылку, если клиенту нужно обратиться напрямую.</p>
+        </div>
+        <Field label="Имя специалиста" optional maxLength={120} value={form.specialistName} onChange={(e) => set('specialistName', e.target.value)} error={errors.specialistName} placeholder="Например: Анна Иванова" />
+        <Field label="Ссылка на Telegram" optional type="url" maxLength={500} value={form.telegramUrl} onChange={(e) => set('telegramUrl', e.target.value)} error={errors.telegramUrl} placeholder="https://t.me/username" />
+        <Field label="Ссылка на MAX" optional type="url" maxLength={500} value={form.maxUrl} onChange={(e) => set('maxUrl', e.target.value)} error={errors.maxUrl} placeholder="https://web.max.ru/123456" />
+      </div>}
 
       {form.kind === 'instruction' && <>
         <TextArea label="Краткое описание" value={form.description} onChange={(e) => set('description', e.target.value)} error={errors.description} rows={3} />

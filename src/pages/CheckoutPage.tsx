@@ -47,6 +47,7 @@ export function CheckoutPage() {
   const { service, loading, error, notFound } = useService(slug)
 
   if (notFound) return <Navigate to={CATALOG_PATH} replace />
+  if (service?.specialistName || service?.kind === 'instruction') return <Navigate to={`${CATALOG_PATH}/${service.slug}`} replace />
 
   return (
     <div className="min-h-full w-full bg-[var(--surface)]">
@@ -100,8 +101,9 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
     let active = true
     api.services().then(({ services }) => {
       if (!active) return
-      setAllServices(services)
-      if (selectedSlugs.some((slug) => !services.some((item) => item.slug === slug))) {
+      const orderable = services.filter((item) => item.kind === 'service' && !item.specialistName)
+      setAllServices(orderable)
+      if (selectedSlugs.some((slug) => !orderable.some((item) => item.slug === slug))) {
         setCartError('Одна из выбранных услуг больше не доступна')
       }
     }).catch(() => { if (active) setCartError('Не удалось загрузить выбранные услуги') })

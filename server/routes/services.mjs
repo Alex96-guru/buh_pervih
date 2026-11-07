@@ -28,6 +28,9 @@ function publicService(row) {
     audience: row.audience,
     needs: row.needs,
     result: row.result,
+    specialistName: row.specialist_name,
+    telegramUrl: row.specialist_telegram_url,
+    maxUrl: row.specialist_max_url,
     kind: row.kind,
     description: row.description,
     priceAmount: row.price_amount,
@@ -70,6 +73,42 @@ function text(value, max) {
   return String(value ?? '').trim().slice(0, max)
 }
 
+function specialistUrl(value, field, hosts) {
+  if (value == null || value === '' || (typeof value === 'string' && !value.trim())) return { value: '' }
+  if (typeof value !== 'string' || value.length > 500 || /\s/.test(value.trim())) {
+    return { field, message: 'Укажите корректную ссылку HTTPS' }
+  }
+  try {
+    const url = new URL(value.trim())
+    if (url.protocol !== 'https:' || !hosts.includes(url.hostname) || url.username || url.password ||
+        url.port || url.pathname === '/') {
+      return { field, message: 'Укажите ссылку на профиль или чат в нужном мессенджере' }
+    }
+    return { value: url.href }
+  } catch {
+    return { field, message: 'Укажите корректную ссылку HTTPS' }
+  }
+}
+
+function parseSpecialist(body) {
+  if (body?.specialistName != null && typeof body.specialistName !== 'string') {
+    return { field: 'specialistName', message: 'Укажите имя специалиста' }
+  }
+  const specialistName = (body?.specialistName ?? '').trim()
+  if (specialistName.length > 120) return { field: 'specialistName', message: 'Имя должно быть короче 120 символов' }
+  const telegram = specialistUrl(body?.telegramUrl, 'telegramUrl', ['t.me', 'telegram.me'])
+  if ('field' in telegram) return telegram
+  const max = specialistUrl(body?.maxUrl, 'maxUrl', ['max.ru', 'web.max.ru'])
+  if ('field' in max) return max
+  if ((telegram.value || max.value) && !specialistName) {
+    return { field: 'specialistName', message: 'Укажите имя специалиста' }
+  }
+  if (specialistName && !telegram.value && !max.value) {
+    return { field: 'telegramUrl', message: 'Добавьте ссылку на Telegram или MAX' }
+  }
+  return { data: { specialistName, telegramUrl: telegram.value, maxUrl: max.value } }
+}
+
 /**
  * Проверяет и нормализует тело запроса. Возвращает либо { data },
  * либо { field, message } для ответа 400.
@@ -88,7 +127,7 @@ function parseService(body) {
       kind, group: 'instructions', subgroup: '', title,
       price: `${amount.toLocaleString('ru-RU')} ₽`, priceAmount: amount,
       description, published: body.published, fileId: body.fileId ?? null,
-      audience: '', needs: [], result: '',
+      audience: '', needs: [], result: '', specialistName: '', telegramUrl: '', maxUrl: '',
     } }
   }
   if (kind !== 'service') return { field: 'kind', message: 'Неизвестный тип позиции' }
@@ -100,6 +139,9 @@ function parseService(body) {
 
   const price = text(body?.price, 60)
   if (!price) return { field: 'price', message: 'Укажите цену' }
+
+  const specialist = parseSpecialist(body)
+  if (!specialist.data) return specialist
 
   if (!Array.isArray(body?.needs ?? [])) return { field: 'needs', message: 'Неверный список' }
 
@@ -127,6 +169,7 @@ function parseService(body) {
       audience: text(body?.audience, 2000),
       needs,
       result: text(body?.result, 4000),
+      ...specialist.data,
       kind: 'service', description: '', priceAmount: null, published: true, fileId: null,
     },
   }
@@ -238,11 +281,13 @@ adminServicesRouter.post('/', async (req, res, next) => {
 
     const { rows } = await pool.query(
       `INSERT INTO services (slug, group_id, subgroup, title, price, audience, needs, result, position,
-                             kind, description, price_amount, is_published, instruction_file_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                             kind, description, price_amount, is_published, instruction_file_id,
+                             specialist_name, specialist_telegram_url, specialist_max_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING *`,
       [slug, s.group, s.subgroup, s.title, s.price, s.audience, JSON.stringify(s.needs), s.result, position,
-        s.kind, s.description, s.priceAmount, s.published, s.fileId],
+        s.kind, s.description, s.priceAmount, s.published, s.fileId,
+        s.specialistName, s.telegramUrl, s.maxUrl],
     )
 
     return res.status(201).json({ service: publicService(rows[0]) })
@@ -278,7 +323,8 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
           SET group_id = $2, subgroup = $3, title = $4, price = $5,
           audience = $6, needs = $7, result = $8, position = $9,
           description = $10, price_amount = $11, is_published = $12,
-          instruction_file_id = coalesce($13, instruction_file_id)
+          instruction_file_id = coalesce($13, instruction_file_id),
+          specialist_name = $14, specialist_telegram_url = $15, specialist_max_url = $16
         WHERE id = $1
         RETURNING *`,
       [
@@ -295,6 +341,9 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
         s.priceAmount,
         s.published,
         s.fileId,
+        s.specialistName,
+        s.telegramUrl,
+        s.maxUrl,
       ],
     )
 
