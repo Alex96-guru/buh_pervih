@@ -103,7 +103,20 @@ test('specialist contacts and service ordering', {
     assert.equal(publicService.status, 200)
     assert.equal(publicService.data.service.specialistName, contacts.specialistName)
     assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,
-      body: { slug: service.slug, comment: 'Помогите с воинским учётом' } })).status, 409)
+      body: { slug: service.slug, comment: 'Коротко' } })).status, 400)
+    const directOrder = await call('/api/orders', { method: 'POST', cookie: client.cookie,
+      body: { slug: service.slug, comment: 'Помогите с воинским учётом' } })
+    assert.equal(directOrder.status, 201)
+    assert.equal(directOrder.data.order.status, 'new')
+    const message = await call(`/api/orders/${directOrder.data.order.id}/messages`, {
+      method: 'POST', cookie: client.cookie, body: { body: 'Здравствуйте, уточните документы' },
+    })
+    assert.equal(message.status, 201)
+    assert.equal((await call(`/api/orders/${directOrder.data.order.id}/messages`, { cookie: admin.cookie })).data.messages[0].body,
+      'Здравствуйте, уточните документы')
+    const adminOrders = await call('/api/admin/orders', { cookie: admin.cookie })
+    assert.equal(adminOrders.status, 200)
+    assert.ok(adminOrders.data.orders.some((order) => order.id === directOrder.data.order.id))
     assert.equal((await call('/api/admin/services', { method: 'POST', cookie: client.cookie,
       body: { ...base, ...contacts } })).status, 404)
 
@@ -119,15 +132,17 @@ test('specialist contacts and service ordering', {
     assert.equal(maxOnly.data.service.telegramUrl, '')
     assert.equal(maxOnly.data.service.maxUrl, 'https://max.ru/anna')
     assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,
-      body: { slug: service.slug, comment: 'Повторная заявка' } })).status, 409)
+      body: { slug: service.slug, comment: 'Повторная заявка' } })).status, 201)
     const contactOnly = await create({ contactPhone: '8 902 796-59-15', contactEmail: 'BUHPERVIH@yandex.ru' })
     assert.equal(contactOnly.status, 201)
     assert.equal(contactOnly.data.service.contactPhone, '+79027965915')
     assert.equal(contactOnly.data.service.contactEmail, 'buhpervih@yandex.ru')
     assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,
-      body: { slug: contactOnly.data.service.slug, comment: 'Письмо или MAX' } })).status, 409)
+      body: { slug: contactOnly.data.service.slug, comment: 'Письмо или MAX' } })).status, 201)
     const { rows: existing } = await db.query("SELECT slug FROM services WHERE kind = 'service' AND price ~ '[0-9]' AND specialist_name = '' LIMIT 1")
     assert.ok(existing[0])
+    assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,
+      body: { services: [contactOnly.data.service.slug, existing[0].slug], comment: 'Смешанная заявка' } })).status, 400)
     assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,
       body: { slug: existing[0].slug, comment: 'Обычная услуга' } })).status, 201)
   } finally {

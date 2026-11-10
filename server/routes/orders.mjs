@@ -128,8 +128,9 @@ ordersRouter.post('/', async (req, res, next) => {
     const bySlug = new Map(found.map((service) => [service.slug, service]))
     if (requested.some((item) => !bySlug.has(item))) return res.status(404).json({ error: 'Услуга не найдена' })
     const services = requested.map((item) => bySlug.get(item))
-    if (services.some((item) => item.specialist_name || item.specialist_telegram_url || item.specialist_max_url || item.specialist_phone || item.specialist_email)) {
-      return res.status(409).json({ error: 'Для этой услуги свяжитесь по контактам на её странице' })
+    const directContact = services.some((item) => item.specialist_name || item.specialist_telegram_url || item.specialist_max_url || item.specialist_phone || item.specialist_email)
+    if (directContact && (services.length !== 1 || (parentOrderId !== undefined && parentOrderId !== null))) {
+      return res.status(400).json({ error: 'Заявку с прямыми контактами оформите отдельно от других услуг' })
     }
     const service = services[0]
     const items = services.map((item) => ({
@@ -141,7 +142,7 @@ ordersRouter.post('/', async (req, res, next) => {
     const amount = items.every((item) => item.amount !== null)
       ? items.reduce((total, item) => total + item.amount, 0)
       : null
-    if (amount === null && comment.length < 10) {
+    if ((amount === null || directContact) && comment.length < 10) {
       return res.status(400).json({ error: 'Опишите задачу хотя бы в 10 символах, чтобы специалист мог оценить стоимость', field: 'comment' })
     }
     if (items.length > 1 && amount === null) {

@@ -47,7 +47,7 @@ export function CheckoutPage() {
   const { service, loading, error, notFound } = useService(slug)
 
   if (notFound) return <Navigate to={CATALOG_PATH} replace />
-  if (service && (hasDirectContact(service) || service.kind === 'instruction')) return <Navigate to={`${CATALOG_PATH}/${service.slug}`} replace />
+  if (service?.kind === 'instruction') return <Navigate to={`${CATALOG_PATH}/${service.slug}`} replace />
 
   return (
     <div className="min-h-full w-full bg-[var(--surface)]">
@@ -55,7 +55,7 @@ export function CheckoutPage() {
 
       <main className="w-full bg-[var(--page-bg)] px-5 pt-10 pb-[72px] lg:px-[120px] lg:pt-12 lg:pb-[120px]">
         {service && user ? (
-          <CheckoutContent key={`${service.slug}:${params.toString()}`} service={service} user={user} parentOrderId={parentOrderId} cart={cart} />
+          <CheckoutContent key={`${service.slug}:${params.toString()}`} service={service} user={user} parentOrderId={hasDirectContact(service) ? null : parentOrderId} cart={hasDirectContact(service) ? [] : cart} />
         ) : (
           <p
             role={error ? 'alert' : undefined}
@@ -76,7 +76,8 @@ export function CheckoutPage() {
 
 function CheckoutContent({ service, user, parentOrderId, cart }: { service: Service; user: AuthUser; parentOrderId: string | null; cart: string[] }) {
   const navigate = useNavigate()
-  const [selectedSlugs, setSelectedSlugs] = useState(() => [...new Set([...cart, service.slug])])
+  const directContact = hasDirectContact(service)
+  const [selectedSlugs, setSelectedSlugs] = useState(() => directContact ? [service.slug] : [...new Set([...cart, service.slug])])
   const [allServices, setAllServices] = useState<Service[] | null>(null)
   const [cartError, setCartError] = useState('')
   const [showPicker, setShowPicker] = useState(false)
@@ -101,7 +102,7 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
     let active = true
     api.services().then(({ services }) => {
       if (!active) return
-      const orderable = services.filter((item) => item.kind === 'service' && !hasDirectContact(item))
+      const orderable = services.filter((item) => item.kind === 'service' && (!hasDirectContact(item) || item.slug === service.slug))
       setAllServices(orderable)
       if (selectedSlugs.some((slug) => !orderable.some((item) => item.slug === slug))) {
         setCartError('Одна из выбранных услуг больше не доступна')
@@ -151,7 +152,7 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
     if (submitting || !cartReady || selectedSlugs.length === 0 || selectedSlugs.length > 10 ||
         (parentOrderId && (!parentOrder || !amount))) return
 
-    if (amount === null && comment.trim().length < 10) {
+    if ((amount === null || directContact) && comment.trim().length < 10) {
       setCommentError('Кратко опишите задачу — минимум 10 символов')
       return
     }
@@ -169,7 +170,7 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
           failed.push(`${file.name}: ${err instanceof Error ? err.message : 'не удалось загрузить'}`)
         }
       }
-      navigate(orderPath(order.id), { state: failed.length ? { uploadError: `Не загрузились файлы: ${failed.join('; ')}. Их можно прикрепить на этой странице.` } : undefined })
+      navigate(`${orderPath(order.id)}#conversation`, { state: failed.length ? { uploadError: `Не загрузились файлы: ${failed.join('; ')}. Их можно прикрепить на этой странице.` } : undefined })
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Не удалось оформить заказ')
       setSubmitting(false)
@@ -227,14 +228,14 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
                       </ul>
                     ) : <p className="mt-3 text-[14px] text-[var(--ink-2)]">Специалист уточнит список документов после оформления.</p>}
                   </details>
-                  <button type="button" onClick={() => removeService(item.slug)} aria-label={`Удалить услугу ${item.title}`} className="flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-[var(--danger)] hover:underline">
+                  {!directContact && <button type="button" onClick={() => removeService(item.slug)} aria-label={`Удалить услугу ${item.title}`} className="flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-[var(--danger)] hover:underline">
                     <Trash2 size={16} aria-hidden="true" />Удалить
-                  </button>
+                  </button>}
                 </div>
               </div>
             ))}
             {selectedServices.length === 0 && <p className="text-[15px] text-[var(--ink-2)]">Выберите услугу для оформления.</p>}
-            {allServices && selectedSlugs.length < 10 && (amount !== null || selectedSlugs.length === 0) && (
+            {!directContact && allServices && selectedSlugs.length < 10 && (amount !== null || selectedSlugs.length === 0) && (
               <button type="button" onClick={() => setShowPicker((value) => !value)} className="flex w-fit cursor-pointer items-center gap-2 text-[15px] font-semibold text-[var(--accent)] hover:underline">
                 <Plus size={18} aria-hidden="true" />{showPicker ? 'Скрыть услуги' : 'Добавить услугу'}
               </button>
@@ -293,16 +294,16 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
           </Panel>
 
           <TextArea
-            label={amount === null ? 'Опишите задачу для оценки стоимости' : 'Комментарий для специалиста'}
-            optional={amount !== null}
+            label={amount === null || directContact ? 'Опишите задачу для специалиста' : 'Комментарий для специалиста'}
+            optional={amount !== null && !directContact}
             error={commentError}
             rows={4}
             maxLength={2000}
-            placeholder={amount === null ? 'Что нужно сделать, за какой период и какие документы уже есть?' : 'Например: нужна декларация за 2025 год, ЭЦП есть'}
+            placeholder={amount === null || directContact ? 'Что нужно сделать и какие документы уже есть?' : 'Например: нужна декларация за 2025 год, ЭЦП есть'}
             value={comment}
             onChange={(e) => { setComment(e.target.value); setCommentError('') }}
           />
-          {amount === null && <p className="-mt-3 text-[13px] leading-5 text-[var(--ink-2)]">Укажите, что нужно сделать и за какой период. Без этого специалист не сможет оценить стоимость.</p>}
+          {(amount === null || directContact) && <p className="-mt-3 text-[13px] leading-5 text-[var(--ink-2)]">Кратко опишите задачу (не меньше 10 символов). После оформления откроется чат на сайте.</p>}
         </div>
 
         {/* Десктоп: итог справа и едет вместе с прокруткой */}
@@ -316,7 +317,7 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
             </p>
 
             <SubmitButton disabled={submitting || !cartReady || selectedSlugs.length === 0 || selectedSlugs.length > 10 || Boolean(parentOrderId && (!parentOrder || !amount))}>
-              {submitting ? 'Оформляем и загружаем…' : 'Оформить заказ'}
+              {submitting ? 'Оформляем и загружаем…' : directContact ? 'Оформить и открыть чат' : 'Оформить заказ'}
             </SubmitButton>
 
             {submitError && (

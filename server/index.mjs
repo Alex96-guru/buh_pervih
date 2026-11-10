@@ -73,6 +73,9 @@ try {
 }
 
 const port = Number(process.env.PORT) || 3000
-app.listen(port, '0.0.0.0', () => {
+// В разработке localhost может разрешаться как ::1; принимаем IPv4 и IPv6.
+// В Railway сохраняем прежний IPv4 bind.
+const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '::'
+app.listen(port, host, () => {
   console.log(`Сервер слушает порт ${port}`)
 })

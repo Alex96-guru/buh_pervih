@@ -24,7 +24,7 @@ function Summary({ slug, price, parentOrderId, cart, specialist }: { slug: strin
         {price}
       </p>
       {specialist ? (
-        <Button href="#specialist-contact" className="w-full">Связаться по услуге</Button>
+        <Button href={checkoutPath(slug)} className="w-full">Оформить заявку</Button>
       ) : (!parentOrderId || /\d/.test(price)) ? (
         <Button href={withOrderCart(checkoutPath(slug), parentOrderId, cart.filter((item) => item !== slug))} className="w-full">
           {parentOrderId ? 'Добавить к заказу' : 'Заказать'}
@@ -33,7 +33,7 @@ function Summary({ slug, price, parentOrderId, cart, specialist }: { slug: strin
       <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
         <Info size={20} className="mt-px shrink-0 text-[var(--accent)]" />
         <p className="flex-1 text-[15px] leading-[22px] font-medium text-[var(--ink)]">
-          {specialist ? 'Уточните задачу и условия работы по указанным контактам.' : DOCS_NOTE}
+          {specialist ? 'После заявки откроется чат на сайте. MAX и почта доступны ниже.' : DOCS_NOTE}
         </p>
       </div>
     </div>
@@ -106,7 +106,7 @@ function SpecialistContact({ service }: { service: Service }) {
   return (
     <section id="specialist-contact" className="flex scroll-mt-[150px] flex-col gap-4 rounded-[20px] border border-[var(--line)] bg-white p-5 lg:p-7">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[22px] font-bold text-[var(--ink)]">Связаться по услуге</h2>
+        <h2 className="text-[22px] font-bold text-[var(--ink)]">Связаться через MAX или почту</h2>
         {service.specialistName && <p className="text-[17px] font-semibold text-[var(--ink)]">{service.specialistName}</p>}
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
