@@ -27,6 +27,8 @@ function publicService(row) {
     specialistName: row.specialist_name,
     telegramUrl: row.specialist_telegram_url,
     maxUrl: row.specialist_max_url,
+    contactPhone: row.specialist_phone,
+    contactEmail: row.specialist_email,
     kind: row.kind,
     description: row.description,
     priceAmount: row.price_amount,
@@ -96,13 +98,25 @@ function parseSpecialist(body) {
   if ('field' in telegram) return telegram
   const max = specialistUrl(body?.maxUrl, 'maxUrl', ['max.ru', 'web.max.ru'])
   if ('field' in max) return max
-  if ((telegram.value || max.value) && !specialistName) {
+  const rawPhone = body?.contactPhone ?? ''
+  if (typeof rawPhone !== 'string' || (rawPhone.trim() && !/^(?:\+7|8)\d{10}$/.test(rawPhone.trim().replace(/[\s()-]/g, '')))) {
+    return { field: 'contactPhone', message: 'Укажите российский номер телефона из 11 цифр' }
+  }
+  const digits = rawPhone.replace(/\D/g, '')
+  const contactPhone = digits ? `+7${digits.slice(1)}` : ''
+  const rawEmail = body?.contactEmail ?? ''
+  if (typeof rawEmail !== 'string' || rawEmail.length > 254 ||
+      (rawEmail.trim() && !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(rawEmail.trim()))) {
+    return { field: 'contactEmail', message: 'Укажите корректный email' }
+  }
+  const contactEmail = rawEmail.trim().toLowerCase()
+  if ((telegram.value || max.value) && !specialistName && !contactPhone && !contactEmail) {
     return { field: 'specialistName', message: 'Укажите имя специалиста' }
   }
-  if (specialistName && !telegram.value && !max.value) {
-    return { field: 'telegramUrl', message: 'Добавьте ссылку на Telegram или MAX' }
+  if (specialistName && !telegram.value && !max.value && !contactPhone && !contactEmail) {
+    return { field: 'telegramUrl', message: 'Добавьте ссылку, телефон MAX или email' }
   }
-  return { data: { specialistName, telegramUrl: telegram.value, maxUrl: max.value } }
+  return { data: { specialistName, telegramUrl: telegram.value, maxUrl: max.value, contactPhone, contactEmail } }
 }
 
 /**
@@ -123,7 +137,7 @@ function parseService(body) {
       kind, group: 'instructions', subgroup: '', title,
       price: `${amount.toLocaleString('ru-RU')} ₽`, priceAmount: amount,
       description, published: body.published, fileId: body.fileId ?? null,
-      audience: '', needs: [], result: '', specialistName: '', telegramUrl: '', maxUrl: '',
+      audience: '', needs: [], result: '', specialistName: '', telegramUrl: '', maxUrl: '', contactPhone: '', contactEmail: '',
     } }
   }
   if (kind !== 'service') return { field: 'kind', message: 'Неизвестный тип позиции' }
@@ -278,12 +292,12 @@ adminServicesRouter.post('/', async (req, res, next) => {
     const { rows } = await pool.query(
       `INSERT INTO services (slug, group_id, subgroup, title, price, audience, needs, result, position,
                              kind, description, price_amount, is_published, instruction_file_id,
-                             specialist_name, specialist_telegram_url, specialist_max_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                             specialist_name, specialist_telegram_url, specialist_max_url, specialist_phone, specialist_email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        RETURNING *`,
       [slug, s.group, s.subgroup, s.title, s.price, s.audience, JSON.stringify(s.needs), s.result, position,
         s.kind, s.description, s.priceAmount, s.published, s.fileId,
-        s.specialistName, s.telegramUrl, s.maxUrl],
+        s.specialistName, s.telegramUrl, s.maxUrl, s.contactPhone, s.contactEmail],
     )
 
     return res.status(201).json({ service: publicService(rows[0]) })
@@ -320,7 +334,8 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
           audience = $6, needs = $7, result = $8, position = $9,
           description = $10, price_amount = $11, is_published = $12,
           instruction_file_id = coalesce($13, instruction_file_id),
-          specialist_name = $14, specialist_telegram_url = $15, specialist_max_url = $16
+          specialist_name = $14, specialist_telegram_url = $15, specialist_max_url = $16,
+          specialist_phone = $17, specialist_email = $18
         WHERE id = $1
         RETURNING *`,
       [
@@ -340,6 +355,8 @@ adminServicesRouter.put('/:id', async (req, res, next) => {
         s.specialistName,
         s.telegramUrl,
         s.maxUrl,
+        s.contactPhone,
+        s.contactEmail,
       ],
     )
 

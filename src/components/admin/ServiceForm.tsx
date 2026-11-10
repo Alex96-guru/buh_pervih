@@ -17,7 +17,7 @@ const EMPTY: ServicePayload = {
   audience: '',
   needs: [],
   result: '',
-  specialistName: '', telegramUrl: '', maxUrl: '',
+  specialistName: '', telegramUrl: '', maxUrl: '', contactPhone: '', contactEmail: '',
   description: '', priceAmount: null, published: true, fileId: null,
 }
 
@@ -148,6 +148,8 @@ export function ServiceForm({
           specialistName: service.specialistName,
           telegramUrl: service.telegramUrl,
           maxUrl: service.maxUrl,
+          contactPhone: service.contactPhone,
+          contactEmail: service.contactEmail,
           kind: service.kind, description: service.description,
           priceAmount: service.priceAmount, published: service.published,
           fileId: null,
@@ -275,11 +277,13 @@ export function ServiceForm({
       {form.kind === 'service' && <div className="flex w-full flex-col gap-4 rounded-[16px] border border-[var(--line)] bg-[var(--page-bg)] p-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-[17px] font-bold text-[var(--ink)]">Сторонний специалист</h3>
-          <p className="text-[13px] text-[var(--ink-2)]">Укажите имя и хотя бы одну ссылку, если клиенту нужно обратиться напрямую.</p>
+          <p className="text-[13px] text-[var(--ink-2)]">Укажите хотя бы один контакт, если клиенту нужно обратиться напрямую. По номеру MAX клиент найдёт вас в приложении.</p>
         </div>
         <Field label="Имя специалиста" optional maxLength={120} value={form.specialistName} onChange={(e) => set('specialistName', e.target.value)} error={errors.specialistName} placeholder="Например: Анна Иванова" />
         <Field label="Ссылка на Telegram" optional type="url" maxLength={500} value={form.telegramUrl} onChange={(e) => set('telegramUrl', e.target.value)} error={errors.telegramUrl} placeholder="https://t.me/username" />
         <Field label="Ссылка на MAX" optional type="url" maxLength={500} value={form.maxUrl} onChange={(e) => set('maxUrl', e.target.value)} error={errors.maxUrl} placeholder="https://web.max.ru/123456" />
+        <Field label="Номер телефона в MAX" optional type="tel" maxLength={30} value={form.contactPhone} onChange={(e) => set('contactPhone', e.target.value)} error={errors.contactPhone} placeholder="8 902 796-59-15" />
+        <Field label="Email для заявок" optional type="email" maxLength={254} value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} error={errors.contactEmail} placeholder="name@example.ru" />
       </div>}
 
       {form.kind === 'instruction' && <>

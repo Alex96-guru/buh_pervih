@@ -27,7 +27,7 @@ app.use(attachUser)
 
 app.get('/api/health', async (_req, res) => {
   try {
-    const { rows } = await pool.query("SELECT 1 FROM schema_migrations WHERE name = '015_service_specialist_contacts.sql'")
+    const { rows } = await pool.query("SELECT 1 FROM schema_migrations WHERE name = '016_service_contact_routes.sql'")
     if (!rows[0]) return res.status(503).json({ ok: false })
     res.json({ ok: true })
   } catch {

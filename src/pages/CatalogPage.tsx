@@ -11,6 +11,7 @@ import {
   CARD_NEEDS_LIMIT,
   CATALOG_HERO,
   CONSULTATION,
+  hasDirectContact,
   serviceHref,
 } from '../lib/catalog'
 import type { CatalogSubgroup, Service } from '../lib/catalog'
@@ -106,7 +107,7 @@ export function CatalogPage() {
   const { services, loading, error } = useServices()
 
   const catalog = useMemo(
-    () => buildCatalog(parentOrderId ? (services ?? []).filter((service) => service.kind === 'service' && !service.specialistName && /\d/.test(service.price)) : (services ?? []), !parentOrderId),
+    () => buildCatalog(parentOrderId ? (services ?? []).filter((service) => service.kind === 'service' && !hasDirectContact(service) && /\d/.test(service.price)) : (services ?? []), !parentOrderId),
     [services, parentOrderId],
   )
   const groupIds = useMemo(() => catalog.map((g) => g.id), [catalog])

@@ -44,7 +44,7 @@ test('specialist contacts and service ordering', {
     for (let n = 0; n < 100; n++) {
       try {
         if ((await fetch(`${origin}/api/health`)).ok &&
-            (await db.query("SELECT 1 FROM schema_migrations WHERE name = '015_service_specialist_contacts.sql'")).rows[0]) {
+            (await db.query("SELECT 1 FROM schema_migrations WHERE name = '016_service_contact_routes.sql'")).rows[0]) {
           ready = true
           break
         }
@@ -53,6 +53,15 @@ test('specialist contacts and service ordering', {
       await delay(100)
     }
     assert.ok(ready, `Server did not migrate and start: ${output.slice(-1000)}`)
+    const { rows: routedServices } = await db.query(
+      "SELECT slug, price, specialist_phone, specialist_email FROM services WHERE slug IN ('lk-nalogoplatelshchika', 'voinskii-uchet') ORDER BY slug",
+    )
+    assert.equal(routedServices.length, 2)
+    assert.deepEqual(routedServices.map(({ slug, specialist_phone, specialist_email }) => [slug, specialist_phone, specialist_email]), [
+      ['lk-nalogoplatelshchika', '+79027965915', 'buhpervih@yandex.ru'],
+      ['voinskii-uchet', '+79082586042', 'buhpervih@yandex.ru'],
+    ])
+    assert.equal(routedServices[0].price, '1 000 ₽')
 
     const call = async (path, { method = 'GET', body, cookie } = {}) => {
       const response = await fetch(`${origin}${path}`, {
@@ -82,6 +91,8 @@ test('specialist contacts and service ordering', {
     assert.equal((await create({ ...contacts, maxUrl: 'https://evil.example/anna' })).status, 400)
     assert.equal((await create({ specialistName: 'Анна Иванова' })).status, 400)
     assert.equal((await create({ telegramUrl: 'https://t.me/anna_account' })).status, 400)
+    assert.equal((await create({ contactPhone: '12345' })).status, 400)
+    assert.equal((await create({ contactEmail: 'not-an-email' })).status, 400)
     const created = await create(contacts)
     assert.equal(created.status, 201)
     const service = created.data.service
@@ -109,6 +120,12 @@ test('specialist contacts and service ordering', {
     assert.equal(maxOnly.data.service.maxUrl, 'https://max.ru/anna')
     assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,
       body: { slug: service.slug, comment: 'Повторная заявка' } })).status, 409)
+    const contactOnly = await create({ contactPhone: '8 902 796-59-15', contactEmail: 'BUHPERVIH@yandex.ru' })
+    assert.equal(contactOnly.status, 201)
+    assert.equal(contactOnly.data.service.contactPhone, '+79027965915')
+    assert.equal(contactOnly.data.service.contactEmail, 'buhpervih@yandex.ru')
+    assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,
+      body: { slug: contactOnly.data.service.slug, comment: 'Письмо или MAX' } })).status, 409)
     const { rows: existing } = await db.query("SELECT slug FROM services WHERE kind = 'service' AND price ~ '[0-9]' AND specialist_name = '' LIMIT 1")
     assert.ok(existing[0])
     assert.equal((await call('/api/orders', { method: 'POST', cookie: client.cookie,

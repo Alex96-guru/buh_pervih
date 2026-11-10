@@ -1,10 +1,10 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { Check, ChevronRight, Info } from 'lucide-react'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { Button } from '../components/ui'
-import { CATALOG_PATH, groupTitle } from '../lib/catalog'
+import { CATALOG_PATH, groupTitle, hasDirectContact } from '../lib/catalog'
 import type { CatalogNeed, Service } from '../lib/catalog'
 import { cn } from '../lib/cn'
 import { linkProps } from '../lib/links'
@@ -24,7 +24,7 @@ function Summary({ slug, price, parentOrderId, cart, specialist }: { slug: strin
         {price}
       </p>
       {specialist ? (
-        <Button href="#specialist-contact" className="w-full">Связаться со специалистом</Button>
+        <Button href="#specialist-contact" className="w-full">Связаться по услуге</Button>
       ) : (!parentOrderId || /\d/.test(price)) ? (
         <Button href={withOrderCart(checkoutPath(slug), parentOrderId, cart.filter((item) => item !== slug))} className="w-full">
           {parentOrderId ? 'Добавить к заказу' : 'Заказать'}
@@ -33,7 +33,7 @@ function Summary({ slug, price, parentOrderId, cart, specialist }: { slug: strin
       <div className="flex w-full items-start gap-[10px] rounded-[16px] bg-[var(--accent-soft)] px-4 py-[14px]">
         <Info size={20} className="mt-px shrink-0 text-[var(--accent)]" />
         <p className="flex-1 text-[15px] leading-[22px] font-medium text-[var(--ink)]">
-          {specialist ? 'Уточните задачу и условия работы напрямую у специалиста.' : DOCS_NOTE}
+          {specialist ? 'Уточните задачу и условия работы по указанным контактам.' : DOCS_NOTE}
         </p>
       </div>
     </div>
@@ -79,7 +79,7 @@ function TextBlock({
       <h2 className="text-[22px] font-bold text-[var(--ink)]">{title}</h2>
       <p
         className={cn(
-          'text-[17px] leading-[26px] text-[var(--ink-2)]',
+          'whitespace-pre-line text-[17px] leading-[26px] text-[var(--ink-2)]',
           large && 'lg:text-[18px] lg:leading-[28px]',
         )}
       >
@@ -90,16 +90,39 @@ function TextBlock({
 }
 
 function SpecialistContact({ service }: { service: Service }) {
+  const [copied, setCopied] = useState(false)
+  const emailSubject = encodeURIComponent(`Заявка: ${service.title}`)
+  const emailBody = encodeURIComponent(`Здравствуйте! Хочу заказать услугу «${service.title}».\n\nМоя задача: `)
+
+  async function copyPhone() {
+    try {
+      await navigator.clipboard.writeText(service.contactPhone)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+
   return (
     <section id="specialist-contact" className="flex scroll-mt-[150px] flex-col gap-4 rounded-[20px] border border-[var(--line)] bg-white p-5 lg:p-7">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[22px] font-bold text-[var(--ink)]">Связаться со специалистом</h2>
-        <p className="text-[17px] font-semibold text-[var(--ink)]">{service.specialistName}</p>
+        <h2 className="text-[22px] font-bold text-[var(--ink)]">Связаться по услуге</h2>
+        {service.specialistName && <p className="text-[17px] font-semibold text-[var(--ink)]">{service.specialistName}</p>}
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {service.telegramUrl && <Button href={service.telegramUrl} size={44} className="w-full sm:w-auto">Написать в Telegram</Button>}
         {service.maxUrl && <Button href={service.maxUrl} size={44} variant="secondary" className="w-full sm:w-auto">Написать в MAX</Button>}
+        {service.contactEmail && <Button href={`mailto:${service.contactEmail}?subject=${emailSubject}&body=${emailBody}`} size={44} variant="secondary" className="w-full sm:w-auto">Написать на почту</Button>}
       </div>
+      {service.contactEmail && <p className="break-all text-[14px] text-[var(--ink-2)]">Email: {service.contactEmail}</p>}
+      {service.contactPhone && <div className="flex flex-col gap-2 rounded-[14px] bg-[var(--page-bg)] p-4">
+        <p className="text-[15px] font-semibold text-[var(--ink)]">MAX: {service.contactPhone}</p>
+        <p className="text-[14px] leading-5 text-[var(--ink-2)]">Скопируйте номер и найдите его в поиске MAX.</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={copyPhone} className="min-h-[40px] rounded-[10px] border border-[var(--line)] bg-white px-4 text-[14px] font-semibold text-[var(--ink)] hover:border-[var(--accent)]">{copied ? 'Номер скопирован' : 'Скопировать номер'}</button>
+          <Button href="https://web.max.ru/" size={40} variant="secondary">Открыть MAX</Button>
+        </div>
+      </div>}
     </section>
   )
 }
@@ -175,7 +198,7 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
 
       {/* Мобайл: цена и кнопка сразу под заголовком */}
       {service.kind === 'service' && <div className="lg:hidden">
-        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} specialist={Boolean(service.specialistName)} />
+        <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} specialist={hasDirectContact(service)} />
       </div>}
 
       <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-start lg:gap-20 lg:pt-2">
@@ -187,7 +210,7 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
             </TextBlock>
           )}
 
-          {service.kind === 'service' && service.specialistName && <SpecialistContact service={service} />}
+          {service.kind === 'service' && hasDirectContact(service) && <SpecialistContact key={service.id} service={service} />}
 
           {service.kind === 'service' && needs.length > 0 && (
             <div className="flex w-full flex-col gap-3 rounded-[20px] border border-[var(--line)] bg-white p-6 lg:gap-[14px] lg:p-7">
@@ -200,13 +223,13 @@ function ServiceContent({ service, parentOrderId, cart }: { service: Service; pa
             </div>
           )}
 
-          {service.kind === 'service' && result && <TextBlock title="Что получите">{result}</TextBlock>}
+          {service.kind === 'service' && result && <TextBlock title={/воинск/i.test(service.title) ? 'Виды работ и стоимость' : 'Что получите'}>{result}</TextBlock>}
           {service.kind === 'instruction' && <InstructionPurchase service={service} />}
         </div>
 
         {/* Десктоп: сводка справа и едет вместе с прокруткой */}
         {service.kind === 'service' && <div className="hidden w-[380px] shrink-0 lg:sticky lg:top-[104px] lg:block">
-          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} specialist={Boolean(service.specialistName)} />
+          <Summary slug={service.slug} price={service.price} parentOrderId={parentOrderId} cart={cart} specialist={hasDirectContact(service)} />
         </div>}
       </div>
     </div>

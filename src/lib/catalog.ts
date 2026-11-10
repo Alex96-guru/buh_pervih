@@ -33,11 +33,17 @@ export type Service = {
   specialistName: string
   telegramUrl: string
   maxUrl: string
+  contactPhone: string
+  contactEmail: string
   kind: 'service' | 'instruction'
   description: string
   priceAmount: number | null
   published: boolean
   hasFile: boolean
+}
+
+export function hasDirectContact(service: Service): boolean {
+  return Boolean(service.telegramUrl || service.maxUrl || service.contactPhone || service.contactEmail)
 }
 
 /** Разделы каталога — они же вкладки-якоря: /services#ip */

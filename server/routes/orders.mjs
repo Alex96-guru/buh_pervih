@@ -128,8 +128,8 @@ ordersRouter.post('/', async (req, res, next) => {
     const bySlug = new Map(found.map((service) => [service.slug, service]))
     if (requested.some((item) => !bySlug.has(item))) return res.status(404).json({ error: 'Услуга не найдена' })
     const services = requested.map((item) => bySlug.get(item))
-    if (services.some((item) => item.specialist_name)) {
-      return res.status(409).json({ error: 'Для этой услуги свяжитесь со сторонним специалистом через её страницу' })
+    if (services.some((item) => item.specialist_name || item.specialist_telegram_url || item.specialist_max_url || item.specialist_phone || item.specialist_email)) {
+      return res.status(409).json({ error: 'Для этой услуги свяжитесь по контактам на её странице' })
     }
     const service = services[0]
     const items = services.map((item) => ({

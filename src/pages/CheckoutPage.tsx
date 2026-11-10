@@ -9,7 +9,7 @@ import { Panel } from '../components/ui'
 import { api, uploadOrderFile } from '../lib/api'
 import { useRequireUser } from '../lib/auth'
 import type { AuthUser } from '../lib/auth'
-import { CATALOG_PATH, groupTitle } from '../lib/catalog'
+import { CATALOG_PATH, groupTitle, hasDirectContact } from '../lib/catalog'
 import type { Service } from '../lib/catalog'
 import { cn } from '../lib/cn'
 import { formatFileSize, MAX_FILE_SIZE, MAX_ORDER_FILES } from '../lib/files'
@@ -47,7 +47,7 @@ export function CheckoutPage() {
   const { service, loading, error, notFound } = useService(slug)
 
   if (notFound) return <Navigate to={CATALOG_PATH} replace />
-  if (service?.specialistName || service?.kind === 'instruction') return <Navigate to={`${CATALOG_PATH}/${service.slug}`} replace />
+  if (service && (hasDirectContact(service) || service.kind === 'instruction')) return <Navigate to={`${CATALOG_PATH}/${service.slug}`} replace />
 
   return (
     <div className="min-h-full w-full bg-[var(--surface)]">
@@ -101,7 +101,7 @@ function CheckoutContent({ service, user, parentOrderId, cart }: { service: Serv
     let active = true
     api.services().then(({ services }) => {
       if (!active) return
-      const orderable = services.filter((item) => item.kind === 'service' && !item.specialistName)
+      const orderable = services.filter((item) => item.kind === 'service' && !hasDirectContact(item))
       setAllServices(orderable)
       if (selectedSlugs.some((slug) => !orderable.some((item) => item.slug === slug))) {
         setCartError('Одна из выбранных услуг больше не доступна')
